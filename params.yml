@@ -1,18 +1,19 @@
-pivnet_token: 
+pivnet_token:
+
+github_username:
+github_password:
 
 # Get the product slug from the URI at https://network.pivotal.io
 # For example, "p-redis" found in https://network.pivotal.io/products/p-redis
 product_slug: elastic-runtime
 product_version: 1.10.*
+pivnet_glob: '*pivotal'
 
 s3_access_key:
 s3_secret_key:
 s3_endpoint: https://s3.amazon.com
 s3_output_bucket:
 s3_region: us-east-1
-
-pivnet_glob: '*pivotal'
-file_extension: 'pivnet-product/*.pivotal'
 
 # for opsmgr, file_extension use below
 # file_extension: 'pivnet-product/*.ova'

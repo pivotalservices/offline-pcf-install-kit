@@ -11,6 +11,8 @@ resources:
   source:
     branch: master
     uri: https://github.com/pivotalservices/offline-pivnet.git
+    username: {{github_username}}
+    password: {{github_password}}
 
 - name: pivnet-product
   type: pivnet
@@ -31,7 +33,7 @@ resources:
     region_name: {{s3_region}}
 
 jobs:
-- name: upload
+- name: prepare
   serial: true
   plan:
   - get: offline-pivnet
@@ -42,7 +44,7 @@ jobs:
       globs:
       - {{pivnet_glob}}
   - task: upload
-    file: pcf-pipelines/tasks/prepare-pivnet-products
+    file: offline-pivnet/tasks/prepare-pivnet-products.yml
     params:
       s3_access_key: {{s3_access_key}}
       s3_secret_key: {{s3_secret_key}}

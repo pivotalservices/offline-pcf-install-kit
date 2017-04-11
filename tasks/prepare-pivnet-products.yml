@@ -17,4 +17,4 @@ params:
   s3_output_bucket:
   s3_region:
 run:
-  path: aws-concourse/scripts/prepare-aws.sh
+  path: offline-pivnet/scripts/prepare-pivnet-products.sh
