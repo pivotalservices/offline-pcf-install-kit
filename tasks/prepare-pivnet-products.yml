@@ -1,0 +1,20 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: virtmerlin/c0-worker
+inputs:
+  - name: offline-pivnet
+  - name: pivnet-product
+outputs:
+  - name: s3
+params:
+  s3_access_key:
+  s3_secret_key:
+  s3_endpoint:
+  s3_output_bucket:
+  s3_region:
+run:
+  path: aws-concourse/scripts/prepare-aws.sh
