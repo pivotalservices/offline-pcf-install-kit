@@ -8,6 +8,9 @@ github_token:
 product_slug: elastic-runtime
 product_version: 1.10.*
 pivnet_glob: '*pivotal'
+pivnet_product_slugs: ["elastic-runtime", "ops-manager"]
+pivnet_product_versions: ["1.10.4"]
+pivnet_product_files: ["*.pivotal", "*.ova"]
 
 s3_access_key:
 s3_secret_key:

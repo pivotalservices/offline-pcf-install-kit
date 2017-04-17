@@ -40,13 +40,13 @@ resources:
     repository: jq
     access_token: {{github_token}}
 
-- name: pivnet-product
-  type: pivnet
-  source:
-    api_token: {{pivnet_token}}
-    product_slug: {{product_slug}}
-    product_version: {{product_version}}
-    sort_by: semver
+# - name: pivnet-product
+#   type: pivnet
+#   source:
+#     api_token: {{pivnet_token}}
+#     product_slug: {{product_slug}}
+#     product_version: {{product_version}}
+#     sort_by: semver
 
 - name: s3
   type: s3
@@ -83,6 +83,9 @@ jobs:
     file: offline-pivnet/tasks/prepare-pivnet-products.yml
     params:
       PIVNET_TOKEN: {{pivnet_token}}
+      PIVNET_PRODUCT_SLUGS: {{pivnet_product_slugs}}
+      PIVNET_PRODUCT_VERSIONS: {{pivnet_product_versions}}
+      PIVNET_PRODUCT_FILES: {{pivnet_product_files}}
       S3_ACCESS_KEY: {{s3_access_key}}
       S3_SECRET_KEY: {{s3_secret_key}}
       S3_ENDPOINT: {{s3_endpoint}}

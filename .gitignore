@@ -1,3 +1,9 @@
 *.secret.*
 minio_config/
 minio_data/
+tmp/
+
+# Ignore tooling replicating concourse task inputs
+jq/
+minio-client/
+pivnet-cli/
