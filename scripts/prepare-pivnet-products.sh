@@ -1,12 +1,12 @@
 #!/bin/bash
 set -ex
 
-PIVNET_CLI=`find ./pivnet-cli -name "*darwin-amd64*"`
-# PIVNET_CLI=`find ./pivnet-cli -name "*linux-amd64*"`
+# PIVNET_CLI=`find ./pivnet-cli -name "*darwin-amd64*"`
+PIVNET_CLI=`find ./pivnet-cli -name "*linux-amd64*"`
 chmod +x $PIVNET_CLI
 
-JQ=`find ./jq -name "*osx-amd64*"`
-# JQ=`find ./jq -name "*linux64*"`
+# JQ=`find ./jq -name "*osx-amd64*"`
+JQ=`find ./jq -name "*linux64*"`
 chmod +x $JQ
 
 MC=`find ./minio-client -name "mc"`
