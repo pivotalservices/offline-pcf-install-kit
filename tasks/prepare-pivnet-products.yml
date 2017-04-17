@@ -7,14 +7,17 @@ image_resource:
     repository: virtmerlin/c0-worker
 inputs:
   - name: offline-pivnet
-  - name: pivnet-product
+  - name: pivnet-cli
+  - name: minio-client
+  - name: jq
 outputs:
   - name: s3
 params:
-  s3_access_key:
-  s3_secret_key:
-  s3_endpoint:
-  s3_output_bucket:
-  s3_region:
+  PIVNET_TOKEN:
+  S3_ACCESS_KEY:
+  S3_SECRET_KEY:
+  S3_ENDPOINT:
+  S3_OUTPUT_BUCKET:
+  S3_REGION:
 run:
   path: offline-pivnet/scripts/prepare-pivnet-products.sh

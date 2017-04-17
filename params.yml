@@ -1,7 +1,7 @@
 pivnet_token:
 
 github_username:
-github_password:
+github_token:
 
 # Get the product slug from the URI at https://network.pivotal.io
 # For example, "p-redis" found in https://network.pivotal.io/products/p-redis

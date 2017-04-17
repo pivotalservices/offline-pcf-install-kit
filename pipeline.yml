@@ -5,14 +5,40 @@ resource_types:
     repository: pivotalcf/pivnet-resource
     tag: latest-final
 
+- name: file-url
+  type: docker-image
+  source:
+    repository: pivotalservices/concourse-curl-resource
+    tag: latest
+
 resources:
+- name: minio-client
+  type: file-url
+  source:
+    url: https://dl.minio.io/client/mc/release/linux-amd64/mc
+    filename: mc
+
 - name: offline-pivnet
   type: git
   source:
     branch: master
     uri: https://github.com/pivotalservices/offline-pivnet.git
     username: {{github_username}}
-    password: {{github_password}}
+    password: {{github_token}}
+
+- name: pivnet-cli
+  type: github-release
+  source:
+    user: pivotal-cf
+    repository: pivnet-cli
+    access_token: {{github_token}}
+
+- name: jq
+  type: github-release
+  source:
+    user: stedolan
+    repository: jq
+    access_token: {{github_token}}
 
 - name: pivnet-product
   type: pivnet
@@ -31,26 +57,37 @@ resources:
     endpoint: {{s3_endpoint}}
     bucket: {{s3_output_bucket}}
     region_name: {{s3_region}}
+    regexp: {{s3_file_regexp}}
 
 jobs:
 - name: prepare
   serial: true
   plan:
   - get: offline-pivnet
-  - get: pivnet-product
-    resource: pivnet-product
-    trigger: true
+  - get: pivnet-cli
     params:
       globs:
-      - {{pivnet_glob}}
-  - task: upload
+      - "*linux-amd64*"
+  - get: jq
+    params:
+      globs:
+      - "*linux64*"
+  - get: minio-client
+  # - get: pivnet-product
+  #   resource: pivnet-product
+  #   trigger: true
+  #   params:
+  #     globs:
+  #     - {{pivnet_glob}}
+  - task: prepare-pivnet-products
     file: offline-pivnet/tasks/prepare-pivnet-products.yml
     params:
-      s3_access_key: {{s3_access_key}}
-      s3_secret_key: {{s3_secret_key}}
-      s3_endpoint: {{s3_endpoint}}
-      s3_output_bucket: {{s3_output_bucket}}
-      s3_region: {{s3_region}}
+      PIVNET_TOKEN: {{pivnet_token}}
+      S3_ACCESS_KEY: {{s3_access_key}}
+      S3_SECRET_KEY: {{s3_secret_key}}
+      S3_ENDPOINT: {{s3_endpoint}}
+      S3_OUTPUT_BUCKET: {{s3_output_bucket}}
+      S3_REGION: {{s3_region}}
   - put: s3
     params:
-      file: -(.*)-
+      file: {{s3_file_extension}}
