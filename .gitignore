@@ -2,8 +2,12 @@
 docker-registry/
 minio/
 concourse/
-gitlab/
+git-server/
 tmp/
+
+# Ignore packer artifacts
+packer/output*
+packer/packer_cache
 
 # Ignore tooling replicating concourse task inputs
 jq/
