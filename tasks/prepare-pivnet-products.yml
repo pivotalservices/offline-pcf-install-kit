@@ -6,7 +6,7 @@ image_resource:
   source:
     repository: virtmerlin/c0-worker
 inputs:
-  - name: offline-pivnet
+  - name: offline-concourse-tools
   - name: pivnet-cli
   - name: minio-client
   - name: jq

@@ -1,6 +1,8 @@
 *.secret.*
-minio_config/
-minio_data/
+docker-registry/
+minio/
+concourse/
+gitlab/
 tmp/
 
 # Ignore tooling replicating concourse task inputs

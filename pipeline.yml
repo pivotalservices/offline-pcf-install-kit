@@ -18,7 +18,7 @@ resources:
     url: https://dl.minio.io/client/mc/release/linux-amd64/mc
     filename: mc
 
-- name: offline-pivnet
+- name: offline-concourse-tools
   type: git
   source:
     branch: master
@@ -63,7 +63,7 @@ jobs:
 - name: prepare
   serial: true
   plan:
-  - get: offline-pivnet
+  - get: offline-concourse-tools
   - get: pivnet-cli
     params:
       globs:
@@ -80,14 +80,14 @@ jobs:
   #     globs:
   #     - {{pivnet_glob}}
   - task: prepare-pivnet-products
-    file: offline-pivnet/tasks/prepare-pivnet-products.yml
+    file: offline-concourse-tools/tasks/prepare-pivnet-products.yml
     params:
       PIVNET_TOKEN: {{pivnet_token}}
       PIVNET_PRODUCT_SLUGS: {{pivnet_product_slugs}}
       PIVNET_PRODUCT_VERSIONS: {{pivnet_product_versions}}
       PIVNET_PRODUCT_FILES: {{pivnet_product_files}}
   - task: prepare-minio-repo
-    file: offline-pivnet/tasks/prepare-minio-repo.yml
+    file: offline-concourse-tools/tasks/prepare-minio-repo.yml
     params:
       S3_ACCESS_KEY: {{s3_access_key}}
       S3_SECRET_KEY: {{s3_secret_key}}
