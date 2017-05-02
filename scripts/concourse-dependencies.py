@@ -21,63 +21,45 @@ import git
 import requests
 
 tmp_dir = 'tmp'
-
-tmp_resource_dir = join(tmp_dir, 'resources')
 try:
-    os.makedirs(tmp_resource_dir)
-except: pass
-
-docker_images_dir = join(tmp_dir, 'docker_images')
-try:
-    os.makedirs(docker_images_dir)
-except: pass
-
-pivnet_resource_dir = join(tmp_dir, 'pivnet-resources')
-try:
-    os.makedirs(pivnet_resource_dir)
+    os.makedirs(tmp_dir)
 except: pass
 
 
-def handle_get_resource(pipeline, get_resource_block, resource_definition):
+def handle_get_resource(pipeline, get_resource_block, resource_definition, git_repos_dir, pivnet_resources_dir, docker_images_dir):
     """
     Downloads and saves everything required to provide this resource to the pipeline.
     """
     print("Getting "+resource_definition['type']+" resource " + get_resource_block['get'])
     if resource_definition['type'] == 'git':
-        clone_git_repo(pipeline, resource_definition)
+        clone_git_repo(pipeline, resource_definition, git_repos_dir)
+    if resource_definition['type'] == 'github-release':
+        
     elif resource_definition['type'] == 'pivnet':
         globs = '**'
         if 'params' in get_resource_block and 'globs' in get_resource_block['params']:
             globs = get_resource_block['params']['globs']
-        save_pivnet_resource(resource_definition, globs)
+        save_pivnet_resource(resource_definition, globs, pivnet_resources_dir)
     else:
         print("Unable to get resources for unhandled resource type " + resource_definition['type'])
 
-def process_pipeline(pipeline):
+def process_pipeline(pipeline, git_repos_dir, pivnet_resources_dir, docker_images_dir):
     resource_definitions = get_resources(pipeline)
     handled_resources = []
     get_resource_filter = lambda x: isinstance(x, dict) and 'get' in x
-    get_resource_blocks = get_yaml_blocks(pipeline, get_resource_filter, False)
+    get_resource_blocks = get_yaml_blocks(pipeline, False, None, get_resource_filter)
     for b in get_resource_blocks:
         resource_name = b['get']
         if 'resource' in b:
             resource_name = b['resource']
         if resource_name not in handled_resources:
-            handle_get_resource(pipeline, b, resource_definitions[resource_name])
+            handle_get_resource(pipeline, b, resource_definitions[resource_name], git_repos_dir, pivnet_resources_dir, docker_images_dir)
             handled_resources.append(resource_name)
 
-    # # Clone any git repositories so that we can find things in their YAML files as well
-    # for resource in get_git_repos(pipeline):
-    #     print(yaml.dump(resource))
-    #
-    # # Download all of the pivnet resources and their dependencied (other pivnet products and stemcells)
-    # for resource in get_pivnet_resources(pipeline):
-    #     print(yaml.dump(resource))
-
     # find all docker images for this pipeline
-    docker_images = get_docker_images(pipeline)
+    docker_images = get_docker_images(pipeline, git_repos_dir, pivnet_resources_dir, docker_images_dir)
     for i in docker_images:
-        print(i)
+        save_docker_image(i, docker_images_dir)
 
 def load_pipeline(pipeline_path, params):
     """
@@ -100,14 +82,19 @@ def get_referenced_yamls(pipeline):
     """
     return dpath.util.search(pipeline, "/**", afilter=lambda x: isinstance(x, basestring) and x.endswith('.yml'), yielded=True)
 
-def get_yaml_blocks(pipeline, filter=lambda x: True, recursive=True):
+def get_yaml_blocks(pipeline, recursive, resource_dirs, filter=lambda x: True,):
     resources = []
     get_yaml_blocks_from_yaml(pipeline, filter, resources)
     if recursive:
         for _, referenced_yaml in get_referenced_yamls(pipeline):
-            yml_str = open(join(tmp_resource_dir, referenced_yaml)).read()
-            yml = yaml.load(yml_str)
-            get_yaml_blocks_from_yaml(yml, filter, resources)
+            for resource_dir in resource_dirs:
+                try:
+                    yml_str = open(join(resource_dir, referenced_yaml)).read()
+                    print("Loading referenced yaml at "+str(join(resource_dir, referenced_yaml)))
+                    yml = yaml.load(yml_str)
+                    get_yaml_blocks_from_yaml(yml, filter, resources)
+                except:
+                    print("Unable to load referenced yaml at "+str(join(resource_dir, referenced_yaml)))
     return resources
 
 def get_yaml_blocks_from_yaml(yml, filter, resources):
@@ -124,19 +111,18 @@ def get_resources(pipeline):
         resources[resource['name']] = resource
     return resources
 
-def get_docker_images(pipeline):
-    docker_images = []
+def get_docker_images(pipeline, git_repos_dir, pivnet_resources_dir, docker_images_dir):
+    docker_images = set()
     docker_images_filter = lambda x: isinstance(x, dict) and 'type' in x and x['type'] == 'docker-image' and 'repository' in x['source']
-    docker_image_resources = get_yaml_blocks(pipeline, docker_images_filter)
+    docker_image_resources = get_yaml_blocks(pipeline, True, [tmp_dir, git_repos_dir, pivnet_resources_dir], docker_images_filter)
     for resource in docker_image_resources:
         docker_image = resource['source']['repository']
         if 'tag' in resource['source']:
             docker_image = docker_image+':'+resource['source']['tag']
-        docker_images.append(docker_image)
-        save_docker_image(docker_image)
+        docker_images.add(docker_image)
     return docker_images
 
-def save_docker_image(image):
+def save_docker_image(image, docker_images_dir):
     call(["docker", "pull", image])
     call(["docker", "save", image, "-o", join(docker_images_dir, image.replace('/', '_').replace(':', '_')+".tar")])
 
@@ -145,10 +131,9 @@ def get_git_repos(pipeline):
     for path, resource in dpath.util.search(pipeline, "/resources/*", yielded=True):
         if resource['type'] == 'git':
             resources.append(resource)
-            clone_git_repo(pipeline, resource)
     return resources
 
-def clone_git_repo(resource):
+def clone_git_repo(resource, git_repos_dir):
     """
     This method clones a pipeline git resource.  It currently only supports public
     and HTTPS-private with provided username+password.
@@ -158,7 +143,7 @@ def clone_git_repo(resource):
     if 'username' in resource['source'] and 'password' in resource['source']:
         remote_uri = re.sub('https://', 'https://'+resource['source']['username']+":"+resource['source']['password']+'@', remote_uri)
 
-    repo = git.Repo.init(join(tmp_resource_dir, resource['name']))
+    repo = git.Repo.init(join(git_repos_dir, resource['name']))
 
     try:
         origin = repo.create_remote('origin', remote_uri)
@@ -179,12 +164,12 @@ def clone_git_repo(resource):
 
 def get_pivnet_resources(pipeline):
     pivnet_resources_filter = lambda x: isinstance(x, dict) and 'type' in x and x['type'] == 'pivnet'
-    pivnet_resources = get_yaml_blocks(pipeline, pivnet_resources_filter, False)
+    pivnet_resources = get_yaml_blocks(pipeline, False, None, pivnet_resources_filter)
     for resource in pivnet_resources:
         save_pivnet_resource(resource)
     return pivnet_resources
 
-def save_pivnet_resource(resource, filename_globs=['**']):
+def save_pivnet_resource(resource, filename_globs, pivnet_resources_dir):
     print("Downloading pivnet resource: "+yaml.dump(resource))
     token = resource['source']['api_token']
     product_slug = resource['source']['product_slug']
@@ -197,7 +182,7 @@ def save_pivnet_resource(resource, filename_globs=['**']):
     product_release = product_releases[0]['id']
 
     get_pivnet_product_accept_eula(token, product_slug, product_release)
-    download_pivnet_product_release_files(token, product_slug, product_release, filename_globs)
+    download_pivnet_product_release_files(token, product_slug, product_release, filename_globs, pivnet_resources_dir)
 
 def get_pivnet_products(token):
     headers = {
@@ -254,7 +239,7 @@ def get_pivnet_product_accept_eula(token, product_slug, release):
         print(str(r))
         raise Exception("There was a problem accepting the EULA for product "+product_slug+" release " + release)
 
-def get_pivnet_product_release_files(token, product_slug, release, filename_globs=['**']):
+def get_pivnet_product_release_files(token, product_slug, release, filename_globs):
     headers = {
         'Accept': 'application/json',
         'Authorization': 'Token '+token,
@@ -270,7 +255,6 @@ def get_pivnet_product_release_files(token, product_slug, release, filename_glob
     for f in files_json['product_files']:
         filename_match = False
         for g in filename_globs:
-            print("Checking if file "+f['aws_object_key']+" matches pattern " + g)
             if fnmatch.fnmatch(f['aws_object_key'], g):
                 filename_match = True
                 break
@@ -281,7 +265,7 @@ def get_pivnet_product_release_files(token, product_slug, release, filename_glob
     #     print(f['name'])
     return filtered_files_json
 
-def download_pivnet_product_release_dependencies(token, product_slug, release):
+def download_pivnet_product_release_dependencies(token, product_slug, release, pivnet_resources_dir):
     headers = {
         'Accept': 'application/json',
         'Authorization': 'Token '+token,
@@ -292,13 +276,13 @@ def download_pivnet_product_release_dependencies(token, product_slug, release):
     deps_json = r.json()
     for dep in deps_json['dependencies']:
         if dep['release']['product']['slug'] == 'stemcells':
-            download_pivnet_product_release_files(token, 'stemcells', dep['release']['id'], '**')
+            download_pivnet_product_release_files(token, 'stemcells', dep['release']['id'], '**', pivnet_resources_dir)
         else:
             # TODO update to download dependency *.pivotal products, but must disambiguate multiple versions
             continue
     return deps_json
 
-def download_pivnet_product_release_files(token, product_slug, release_id, filename_globs=['**']):
+def download_pivnet_product_release_files(token, product_slug, release_id, filename_globs, pivnet_resources_dir):
     print("Downloding pivnet product "+product_slug+" release "+str(release_id)+" files matching " + str(filename_globs))
     headers = {
         'Accept': 'application/json',
@@ -309,7 +293,7 @@ def download_pivnet_product_release_files(token, product_slug, release_id, filen
     for f in get_pivnet_product_release_files(token, product_slug, release_id, filename_globs):
         file_id = f['id']
         print(str(f))
-        pivnet_product_slug_dir = join(pivnet_resource_dir, product_slug)
+        pivnet_product_slug_dir = join(pivnet_resources_dir, product_slug)
         try:
             os.makedirs(pivnet_product_slug_dir)
         except: pass
@@ -338,7 +322,13 @@ def download_pivnet_product_release_files(token, product_slug, release_id, filen
             else:
                 print("Success... SHA256: " + file_hash)
 
-        download_pivnet_product_release_dependencies(token, product_slug, release_id)
+        # A special case:  extract pcf-pipelines packaged in a tarball so we can find referenced tasks inside it
+        # TODO: would love to find a way to make this general for any tarballed repo, but not sure how prevailent
+        # the pattern is beyond pivnet publishing of pcf-pipelines.
+        if product_slug == 'pcf-automation' and local_file.endswith(".tgz"):
+            call(["tar", "-xzvf", local_file, "-C", tmp_dir])
+
+        download_pivnet_product_release_dependencies(token, product_slug, release_id, pivnet_resources_dir)
 
 def sha256_file(file_path):
     sha256 = hashlib.sha256()
@@ -353,9 +343,25 @@ def main(argv):
                         help='Path to pipelines to process')
     parser.add_argument('-l --with-vars', dest='params', nargs='*',
                         help='Path to params YAML files to replace Fly {{..}} values')
+    parser.add_argument('-g --git-repo-dir', dest='git_repos_dir', default='tmp/git-repos',
+                        help='Output location for all cloned git repo resources')
+    parser.add_argument('-n --pivnet-resource-dir', dest='pivnet_resources_dir', default='tmp/pivnet-resources',
+                        help='Output location for all downloaded pivnet resources')
+    parser.add_argument('-d --docker-images-dir', dest='docker_images_dir', default='tmp/git-repos',
+                        help='Output location for all downloaded pivnet resources')
+    try:
+        os.makedirs(args.git_repos_dir)
+    except: pass
+
+    try:
+        os.makedirs(args.docker_images_dir)
+    except: pass
+
+    try:
+        os.makedirs(args.pivnet_resource_dir)
+    except: pass
 
     args = parser.parse_args(argv)
-
     params = {}
     if 'params' in args and args.params is not None:
         for params_path in args.params:
@@ -365,7 +371,7 @@ def main(argv):
 
     for pipeline_path in args.pipelines:
         pipeline = load_pipeline(pipeline_path, params)
-        process_pipeline(pipeline)
+        process_pipeline(pipeline, args.git_repos_dir, args.pivnet_resources_dir, args.docker_images_dir)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
