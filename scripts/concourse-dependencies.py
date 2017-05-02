@@ -281,6 +281,23 @@ def get_pivnet_product_release_files(token, product_slug, release, filename_glob
     #     print(f['name'])
     return filtered_files_json
 
+def download_pivnet_product_release_dependencies(token, product_slug, release):
+    headers = {
+        'Accept': 'application/json',
+        'Authorization': 'Token '+token,
+        'Content-Length': '0',
+        'Content-Type': 'application/json'
+    }
+    r = requests.get('https://network.pivotal.io/api/v2/products/'+product_slug+'/releases/'+str(release)+'/dependencies', headers=headers)
+    deps_json = r.json()
+    for dep in deps_json['dependencies']:
+        if dep['release']['product']['slug'] == 'stemcells':
+            download_pivnet_product_release_files(token, 'stemcells', dep['release']['id'], '**')
+        else:
+            # TODO update to download dependency *.pivotal products, but must disambiguate multiple versions
+            continue
+    return deps_json
+
 def download_pivnet_product_release_files(token, product_slug, release_id, filename_globs=['**']):
     print("Downloding pivnet product "+product_slug+" release "+str(release_id)+" files matching " + str(filename_globs))
     headers = {
@@ -320,6 +337,8 @@ def download_pivnet_product_release_files(token, product_slug, release_id, filen
                 raise Exception("The file for product "+product_slug+" release "+str(release_id)+" file "+str(file_id)+" is corrupted.\nExpected SHA256: "+f['sha256']+"\nDownloaded SHA256: "+sha256.hexdigest())
             else:
                 print("Success... SHA256: " + file_hash)
+
+        download_pivnet_product_release_dependencies(token, product_slug, release_id)
 
 def sha256_file(file_path):
     sha256 = hashlib.sha256()
