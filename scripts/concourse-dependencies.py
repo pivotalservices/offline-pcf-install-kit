@@ -26,7 +26,7 @@ try:
 except: pass
 
 
-def handle_get_resource(pipeline, get_resource_block, resource_definition, git_repos_dir, pivnet_resources_dir, docker_images_dir):
+def handle_get_resource(pipeline, get_resource_block, resource_definition, git_repos_dir, github_releases_dir, pivnet_resources_dir, docker_images_dir):
     """
     Downloads and saves everything required to provide this resource to the pipeline.
     """
@@ -34,7 +34,7 @@ def handle_get_resource(pipeline, get_resource_block, resource_definition, git_r
     if resource_definition['type'] == 'git':
         clone_git_repo(pipeline, resource_definition, git_repos_dir)
     if resource_definition['type'] == 'github-release':
-        
+        download_github_releases(resource_definition, github_releases_dir)
     elif resource_definition['type'] == 'pivnet':
         globs = '**'
         if 'params' in get_resource_block and 'globs' in get_resource_block['params']:
@@ -43,7 +43,7 @@ def handle_get_resource(pipeline, get_resource_block, resource_definition, git_r
     else:
         print("Unable to get resources for unhandled resource type " + resource_definition['type'])
 
-def process_pipeline(pipeline, git_repos_dir, pivnet_resources_dir, docker_images_dir):
+def process_pipeline(pipeline, git_repos_dir, github_releases_dir, pivnet_resources_dir, docker_images_dir):
     resource_definitions = get_resources(pipeline)
     handled_resources = []
     get_resource_filter = lambda x: isinstance(x, dict) and 'get' in x
@@ -53,7 +53,7 @@ def process_pipeline(pipeline, git_repos_dir, pivnet_resources_dir, docker_image
         if 'resource' in b:
             resource_name = b['resource']
         if resource_name not in handled_resources:
-            handle_get_resource(pipeline, b, resource_definitions[resource_name], git_repos_dir, pivnet_resources_dir, docker_images_dir)
+            handle_get_resource(pipeline, b, resource_definitions[resource_name], git_repos_dir, github_releases_dir, pivnet_resources_dir, docker_images_dir)
             handled_resources.append(resource_name)
 
     # find all docker images for this pipeline
@@ -161,6 +161,44 @@ def clone_git_repo(resource, git_repos_dir):
     repo.heads[branch].set_tracking_branch(origin.refs[branch])  # set local branch to track remote branch
     repo.heads[branch].checkout()  # checkout local branch to working tree
     origin.pull()
+
+def get_github_releases(resource_definition):
+    headers = {
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Length': '0',
+        'Content-Type': 'application/json'
+    }
+    if 'access_token' in resource_definition['source']:
+        headers['Authorization'] = 'Token '+resource_definition['source']['access_token']
+
+    releases_url = 'https://api.github.com/repos/'+resource_definition['source']['user']+'/'+resource_definition['source']['repository']+'/releases'
+    r = requests.get(releases_url, headers=headers)
+    releases_json = r.json()
+    print(releases_json)
+    return releases_json
+
+def download_github_releases(resource_definition, github_releases_dir):
+    releases = get_github_releases(resource_definition)
+
+    headers = {
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Length': '0',
+        'Content-Type': 'application/json'
+    }
+
+    # Create the local directory to hold this release's files
+    local_dir = join(github_releases_dir, resource_definition['source']['user'], resource_definition['source']['repository'], releases[0]['name'])
+    try:
+        os.makedirs(local_dir)
+    except: pass
+
+    # Download all assets for the most recent release
+    # TODO: handle a specific version if this is specified in the resource_definition
+    # TODO: handle filtering based on the glob specified as a param in the job descriptor
+    for asset in releases[0]['assets']:
+        local_file = join(local_dir, asset['name'])
+        download_url = asset['browser_download_url']
+        download_file(download_url, headers, local_file, None, True)
 
 def get_pivnet_resources(pipeline):
     pivnet_resources_filter = lambda x: isinstance(x, dict) and 'type' in x and x['type'] == 'pivnet'
@@ -301,26 +339,8 @@ def download_pivnet_product_release_files(token, product_slug, release_id, filen
         local_file = join(pivnet_product_slug_dir, os.path.basename(f['aws_object_key']))
 
         # only download if the file doesn't already exist or if the local sha256 differs from the pivnet-provided hash
-        if not os.path.isfile(local_file) or sha256_file(local_file) != f['sha256']:
-            # Download the file from pivnet
-            r = requests.get('https://network.pivotal.io/api/v2/products/'+product_slug+'/releases/'+str(release_id)+'/product_files/'+str(file_id)+'/download', headers=headers, stream=True)
-            total_length = r.headers.get('content-length')
-            total_length = int(total_length)
-            bytes_read = 0
-            with open(local_file, 'wb') as fd:
-                for chunk in r.iter_content(chunk_size=4096):
-                    bytes_read += len(chunk)
-                    fd.write(chunk)
-                    progress = int(50 * bytes_read / total_length)
-                    sys.stdout.write("\r[%s%s]" % ('=' * progress, ' ' * (50-progress)))
-                    sys.stdout.flush()
-
-            # Compare the downloaded file's sha256 hash with the one provided by pivnet itself
-            file_hash = sha256_file(local_file)
-            if file_hash != f['sha256']:
-                raise Exception("The file for product "+product_slug+" release "+str(release_id)+" file "+str(file_id)+" is corrupted.\nExpected SHA256: "+f['sha256']+"\nDownloaded SHA256: "+sha256.hexdigest())
-            else:
-                print("Success... SHA256: " + file_hash)
+        download_url = 'https://network.pivotal.io/api/v2/products/'+product_slug+'/releases/'+str(release_id)+'/product_files/'+str(file_id)+'/download'
+        download_file(download_url, headers, local_file, f['sha256'], False)
 
         # A special case:  extract pcf-pipelines packaged in a tarball so we can find referenced tasks inside it
         # TODO: would love to find a way to make this general for any tarballed repo, but not sure how prevailent
@@ -329,6 +349,28 @@ def download_pivnet_product_release_files(token, product_slug, release_id, filen
             call(["tar", "-xzvf", local_file, "-C", tmp_dir])
 
         download_pivnet_product_release_dependencies(token, product_slug, release_id, pivnet_resources_dir)
+
+def download_file(url, headers, local_file, sha256=None, redownload=True):
+    if redownload or not os.path.isfile(local_file) or (sha256 is not None and sha256 != sha256_file(local_file)):
+        r = requests.get(url, headers=headers, stream=True)
+        total_length = r.headers.get('content-length')
+        total_length = int(total_length)
+        bytes_read = 0
+        with open(local_file, 'wb') as fd:
+            for chunk in r.iter_content(chunk_size=4096):
+                bytes_read += len(chunk)
+                fd.write(chunk)
+                progress = int(50 * bytes_read / total_length)
+                sys.stdout.write("\r[%s%s]" % ('=' * progress, ' ' * (50-progress)))
+                sys.stdout.flush()
+
+        if sha256 is not None:
+            # Compare the downloaded file's sha256 hash with the one provided
+            file_hash = sha256_file(local_file)
+            if file_hash != sha256:
+                raise Exception("The downloaded file "+local_file+" is corrupted.\nExpected SHA256: "+sha256+"\nDownloaded SHA256: "+file_hash)
+            else:
+                print("Success... downloaded file SHA256: " + file_hash)
 
 def sha256_file(file_path):
     sha256 = hashlib.sha256()
@@ -345,12 +387,18 @@ def main(argv):
                         help='Path to params YAML files to replace Fly {{..}} values')
     parser.add_argument('-g --git-repo-dir', dest='git_repos_dir', default='tmp/git-repos',
                         help='Output location for all cloned git repo resources')
+    parser.add_argument('-r --github-releases-dir', dest='github_releases_dir', default='tmp/github-releases',
+                        help='Output location for all cloned git repo resources')
     parser.add_argument('-n --pivnet-resource-dir', dest='pivnet_resources_dir', default='tmp/pivnet-resources',
                         help='Output location for all downloaded pivnet resources')
     parser.add_argument('-d --docker-images-dir', dest='docker_images_dir', default='tmp/git-repos',
                         help='Output location for all downloaded pivnet resources')
     try:
         os.makedirs(args.git_repos_dir)
+    except: pass
+
+    try:
+        os.makedirs(args.github_releases_dir)
     except: pass
 
     try:
@@ -371,7 +419,7 @@ def main(argv):
 
     for pipeline_path in args.pipelines:
         pipeline = load_pipeline(pipeline_path, params)
-        process_pipeline(pipeline, args.git_repos_dir, args.pivnet_resources_dir, args.docker_images_dir)
+        process_pipeline(pipeline, args.git_repos_dir, args.github_releases_dir, args.pivnet_resources_dir, args.docker_images_dir)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
