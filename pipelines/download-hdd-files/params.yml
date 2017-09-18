@@ -5,6 +5,8 @@ s3_endpoint: http://minio:9000
 s3_bucket: products
 s3_region: us-east-1
 
+iaas_type: vsphere
+
 # Pivotal product tiles
 
 mysql_v1_version_regex: ^1\.10\..*$

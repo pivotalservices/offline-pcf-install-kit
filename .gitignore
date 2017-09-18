@@ -19,3 +19,4 @@ pivnet-cli/
 # Files intended to download via pipelines
 .minio.sys
 kit/products/
+kit/stemcells/

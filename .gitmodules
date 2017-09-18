@@ -4,3 +4,12 @@
 [submodule "kit/repos/bosh-deployment"]
 	path = kit/repos/bosh-deployment
 	url = https://github.com/cloudfoundry/bosh-deployment.git
+[submodule "kit/repos/prometheus-on-PCF"]
+	path = kit/repos/prometheus-on-PCF
+	url = https://github.com/pivotal-cf/prometheus-on-PCF.git
+[submodule "kit/repos/nsx-ci-pipeline"]
+	path = kit/repos/nsx-ci-pipeline
+	url = https://github.com/cf-platform-eng/nsx-ci-pipeline.git
+[submodule "kit/repos/nsx-edge-gen"]
+	path = kit/repos/nsx-edge-gen
+	url = https://github.com/cf-platform-eng/nsx-edge-gen.git

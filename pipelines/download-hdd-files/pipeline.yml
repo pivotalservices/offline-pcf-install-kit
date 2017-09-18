@@ -1,4 +1,67 @@
 ---
+download_stemcell_config: &download_stemcell_config
+  config:
+    platform: linux
+    image_resource:
+      type: docker-image
+      source: {repository: czero/cflinuxfs2}
+    inputs:
+    - name: pivnet-product
+    outputs:
+    - name: stemcells
+    params:
+      IAAS: {{iaas_type}}
+      PIVNET_API_TOKEN: {{pivnet_token}}
+    run:
+      path: bash
+      args:
+      - -c
+      - |
+        STEMCELL_VERSION=$(
+          cat ./pivnet-product/metadata.json |
+          jq --raw-output \
+            '
+            [
+              .Dependencies[]
+              | select(.Release.Product.Name | contains("Stemcells"))
+              | .Release.Version
+            ]
+            | map(split(".") | map(tonumber))
+            | transpose | transpose
+            | max // empty
+            | map(tostring)
+            | join(".")
+            '
+        )
+
+        if [ -n "$STEMCELL_VERSION" ]; then
+          echo "Downloading stemcell $STEMCELL_VERSION"
+
+          product_slug=$(
+            jq --raw-output \
+              '
+              if any(.Dependencies[]; select(.Release.Product.Name | contains("Stemcells for PCF (Windows)"))) then
+                "stemcells-windows-server"
+              else
+                "stemcells"
+              end
+              ' < pivnet-product/metadata.json
+          )
+          
+          mkdir stemcells
+          cd stemcells
+          pivnet-cli login --api-token="$PIVNET_API_TOKEN"
+          pivnet-cli download-product-files -p "$product_slug" -r $STEMCELL_VERSION -g "*${IAAS}*" --accept-eula
+
+          SC_FILE_PATH=`find ./ -name *.tgz`
+          echo $SC_FILE_PATH
+
+          if [ ! -f "$SC_FILE_PATH" ]; then
+            echo "Stemcell file not found!"
+            exit 1
+          fi
+        fi
+
 resource_types:
 - name: pivnet
   type: docker-image
@@ -23,6 +86,16 @@ resources:
     filename: mc
 
 # Pivotal Products
+
+- name: stemcells-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: stemcells
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: bosh-stemcell-(.*)-vsphere-esxi-ubuntu-trusty-go_agent.tgz
 
 - name: p-mysql-v1
   type: pivnet
@@ -126,6 +199,73 @@ resources:
     region_name: {{s3_region}}
     regexp: p-cloudcache-(.*).pivotal
 
+# Bosh add-ons
+
+- name: clamav
+  type: pivnet
+  source:
+    api_token: {{pivnet_token}}
+    product_slug: p-clamav-addon
+    product_version: {{clamav_version_regex}}
+    sort_by: semver
+- name: clamav-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: products
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: clamav-(.*).tgz
+
+- name: fim
+  type: pivnet
+  source:
+    api_token: {{pivnet_token}}
+    product_slug: p-fim-addon
+    product_version: {{fim_version_regex}}
+    sort_by: semver
+- name: fim-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: products
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: fim-(.*).tgz
+
+- name: ipsec
+  type: pivnet
+  source:
+    api_token: {{pivnet_token}}
+    product_slug: p-ipsec-addon
+    product_version: {{ipsec_version_regex}}
+    sort_by: semver
+- name: ipsec-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: products
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: ipsec-(.*).tgz
+
+- name: osconf
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/os-conf-release
+- name: osconf-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: products
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: osconf-(.*).tgz
+
 jobs:
 - name: collector
   plan:
@@ -137,6 +277,10 @@ jobs:
     - get: p-cloudcache
     - get: pcf-metrics
     - get: p-redis
+    - get: clamav
+    - get: fim
+    - get: ipsec
+    - get: osconf
   - task: create-buckets
     config:
       platform: linux
@@ -158,53 +302,123 @@ jobs:
           ls -lah mc
           chmod +x mc/mc
           mc/mc config host add minio $S3_ENDPOINT $S3_ACCESS_KEY_ID $S3_SECRET_ACCESS_KEY
-          mc/mc mb minio/products
+          mc/mc mb minio/products || true
+          mc/mc mb minio/stemcells || true
 
 - name: save-mysql-v1
   plan:
-  - get: p-mysql-v1
+  - get: pivnet-product
+    resource: p-mysql-v1
     trigger: true
     passed: [collector]
+  - task: download-stemcell
+    <<: *download_stemcell_config
+  - put: stemcells-out
+    params:
+      file: stemcells/*.tgz
   - put: p-mysql-v1-out
     params:
-      file: p-mysql-v1/*.pivotal
+      file: pivnet-product/*.pivotal
 - name: save-mysql-v2
   plan:
-  - get: p-mysql-v2
+  - get: pivnet-product
+    resource: p-mysql-v2
     trigger: true
     passed: [collector]
+  - task: download-stemcell
+    <<: *download_stemcell_config
+  - put: stemcells-out
+    params:
+      file: stemcells/*.tgz
   - put: p-mysql-v2-out
     params:
-      file: p-mysql-v2/*.pivotal
+      file: pivnet-product/*.pivotal
 - name: save-sso
   plan:
-  - get: p-sso
+  - get: pivnet-product
+    resource: p-sso
     trigger: true
     passed: [collector]
+  - task: download-stemcell
+    <<: *download_stemcell_config
+  - put: stemcells-out
+    params:
+      file: stemcells/*.tgz
   - put: p-sso-out
     params:
-      file: p-sso/*.pivotal
+      file: pivnet-product/*.pivotal
 - name: save-cloudcache
   plan:
-  - get: p-cloudcache
+  - get: pivnet-product
+    resource: p-cloudcache
     trigger: true
     passed: [collector]
+  - task: download-stemcell
+    <<: *download_stemcell_config
+  - put: stemcells-out
+    params:
+      file: stemcells/*.tgz
   - put: p-cloudcache-out
     params:
-      file: p-cloudcache/*.pivotal
+      file: pivnet-product/*.pivotal
 - name: download-pcf-metrics
   plan:
-  - get: pcf-metrics
+  - get: pivnet-product
+    resource: pcf-metrics
     trigger: true
     passed: [collector]
+  - task: download-stemcell
+    <<: *download_stemcell_config
+  - put: stemcells-out
+    params:
+      file: stemcells/*.tgz
   - put: pcf-metrics-out
     params:
-      file: pcf-metrics/*.pivotal
+      file: pivnet-product/*.pivotal
 - name: download-redis
   plan:
-  - get: p-redis
+  - get: pivnet-product
+    resource: p-redis
     trigger: true
     passed: [collector]
+  - task: download-stemcell
+    <<: *download_stemcell_config
+  - put: stemcells-out
+    params:
+      file: stemcells/*.tgz
   - put: p-redis-out
     params:
-      file: p-redis/*.pivotal
+      file: pivnet-product/*.pivotal
+
+- name: download-clamav
+  plan:
+  - get: clamav
+    trigger: true
+    passed: [collector]
+  - put: clamav-out
+    params:
+      file: clamav/*.tgz
+- name: download-fim
+  plan:
+  - get: fim
+    trigger: true
+    passed: [collector]
+  - put: fim-out
+    params:
+      file: fim/*.tgz
+- name: download-ipsec
+  plan:
+  - get: ipsec
+    trigger: true
+    passed: [collector]
+  - put: ipsec-out
+    params:
+      file: ipsec/*.tgz
+- name: download-osconf
+  plan:
+  - get: osconf
+    trigger: true
+    passed: [collector]
+  - put: osconf-out
+    params:
+      file: osconf/*.tgz
