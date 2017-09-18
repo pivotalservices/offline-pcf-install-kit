@@ -1,0 +1,210 @@
+---
+resource_types:
+- name: pivnet
+  type: docker-image
+  source:
+    repository: pivotalcf/pivnet-resource
+    tag: latest-final
+
+- name: curl
+  type: docker-image
+  source:
+    repository: pivotalservices/concourse-curl-resource
+    tag: latest
+
+resources:
+
+# Tools
+
+- name: mc
+  type: curl
+  source:
+    url: https://dl.minio.io/client/mc/release/linux-amd64/mc
+    filename: mc
+
+# Pivotal Products
+
+- name: p-mysql-v1
+  type: pivnet
+  source:
+    api_token: {{pivnet_token}}
+    product_slug: p-mysql
+    product_version: {{mysql_v1_version_regex}}
+    sort_by: semver
+- name: p-mysql-v1-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: products
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: p-mysql-(.*).pivotal
+
+- name: p-mysql-v2
+  type: pivnet
+  source:
+    api_token: {{pivnet_token}}
+    product_slug: pivotal-mysql
+    product_version: {{mysql_v2_version_regex}}
+    sort_by: semver
+- name: p-mysql-v2-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: products
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: pivotal-mysql-(.*).pivotal
+
+- name: p-sso
+  type: pivnet
+  source:
+    api_token: {{pivnet_token}}
+    product_slug: pivotal_single_sign-on_service
+    product_version: {{sso_version_regex}}
+    sort_by: semver
+- name: p-sso-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: products
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: Pivotal_Single_Sign-On_Service_(.*).pivotal
+
+- name: pcf-metrics
+  type: pivnet
+  source:
+    api_token: {{pivnet_token}}
+    product_slug: apm
+    product_version: {{pcf_metrics_version_regex}}
+    sort_by: semver
+- name: pcf-metrics-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: products
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: apm-(.*).pivotal
+
+- name: p-redis
+  type: pivnet
+  source:
+    api_token: {{pivnet_token}}
+    product_slug: p-redis
+    product_version: {{redis_version_regex}}
+    sort_by: semver
+- name: p-redis-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: products
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: p-redis-(.*).pivotal
+    
+- name: p-cloudcache
+  type: pivnet
+  source:
+    api_token: {{pivnet_token}}
+    product_slug: p-cloudcache
+    product_version: {{cloud_cache_version_regex}}
+    sort_by: semver
+- name: p-cloudcache-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: products
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: p-cloudcache-(.*).pivotal
+
+jobs:
+- name: collector
+  plan:
+  - aggregate:
+    - get: mc
+    - get: p-mysql-v1
+    - get: p-mysql-v2
+    - get: p-sso
+    - get: p-cloudcache
+    - get: pcf-metrics
+    - get: p-redis
+  - task: create-buckets
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: czero/cflinuxfs2}
+      inputs:
+      - name: mc
+      params:
+        S3_ENDPOINT: {{s3_endpoint}}
+        S3_ACCESS_KEY_ID: {{s3_access_key_id}}
+        S3_SECRET_ACCESS_KEY: {{s3_secret_access_key}}
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          ls -lah
+          ls -lah mc
+          chmod +x mc/mc
+          mc/mc config host add minio $S3_ENDPOINT $S3_ACCESS_KEY_ID $S3_SECRET_ACCESS_KEY
+          mc/mc mb minio/products
+
+- name: save-mysql-v1
+  plan:
+  - get: p-mysql-v1
+    trigger: true
+    passed: [collector]
+  - put: p-mysql-v1-out
+    params:
+      file: p-mysql-v1/*.pivotal
+- name: save-mysql-v2
+  plan:
+  - get: p-mysql-v2
+    trigger: true
+    passed: [collector]
+  - put: p-mysql-v2-out
+    params:
+      file: p-mysql-v2/*.pivotal
+- name: save-sso
+  plan:
+  - get: p-sso
+    trigger: true
+    passed: [collector]
+  - put: p-sso-out
+    params:
+      file: p-sso/*.pivotal
+- name: save-cloudcache
+  plan:
+  - get: p-cloudcache
+    trigger: true
+    passed: [collector]
+  - put: p-cloudcache-out
+    params:
+      file: p-cloudcache/*.pivotal
+- name: download-pcf-metrics
+  plan:
+  - get: pcf-metrics
+    trigger: true
+    passed: [collector]
+  - put: pcf-metrics-out
+    params:
+      file: pcf-metrics/*.pivotal
+- name: download-redis
+  plan:
+  - get: p-redis
+    trigger: true
+    passed: [collector]
+  - put: p-redis-out
+    params:
+      file: p-redis/*.pivotal

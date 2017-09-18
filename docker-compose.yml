@@ -1,49 +1,15 @@
 version: "2"
 services:
-  git-server:
-    image: unixtastic/git-ssh-server
-    volumes:
-    - ./git-server:/git
-    ports:
-    - "2222:22"
-    restart: always
-
-  # git-server:
-  #   image: gitlab/gitlab-ce:8.16.9-ce.0
-  #   mem_limit: 4g
-  #   memswap_limit: 4g
-  #   environment:
-  #     GITLAB_OMNIBUS_CONFIG: |
-  #       external_url 'http://localhost:80'
-  #       unicorn['worker_processes'] = 2
-  #       # Add any other gitlab.rb configuration here, each on its own line
-  #   ports:
-  #   - '80:80'
-  #   - '443:443'
-  #   - '2222:22'
-  #   volumes:
-  #   - ./gitlab/config:/etc/gitlab
-  #   - ./gitlab/logs:/var/log/gitlab
-  #   - ./gitlab/data:/var/opt/gitlab
-  #   restart: always
-
-  docker-registry:
-    image: registry:2
-    volumes:
-      - ./docker-registry/data:/var/lib/registry
-    ports: ["5000:5000"]
-    restart: always
-
   minio:
     image: minio/minio
-    command: server /export
+    command: server /data
     ports: ["9000:9000"]
     volumes:
-    - ./minio/config:/root/.minio
-    - ./minio/data:/export" ]
+    - "./minio/config:/root/.minio"
+    - "./kit:/data"
     environment:
-      MINIO_ACCESS_KEY: DNGDOBTF44KY2PE7YPFV
-      MINIO_SECRET_KEY: j9e9Q71+YRGS2Ae0TfBpqQJkoSUp4MQvJPAa07xS
+      MINIO_ACCESS_KEY: minio
+      MINIO_SECRET_KEY: alwaysbekind
     restart: always
 
   concourse-db:

@@ -1,3 +1,5 @@
+private.key
+public.key
 *.secret.*
 docker-registry/
 minio/
@@ -13,3 +15,7 @@ packer/packer_cache
 jq/
 minio-client/
 pivnet-cli/
+
+# Files intended to download via pipelines
+.minio.sys
+kit/products/

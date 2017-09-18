@@ -1,0 +1,6 @@
+[submodule "kit/repos/pcf-pipelines"]
+	path = kit/repos/pcf-pipelines
+	url = https://github.com/pivotal-cf/pcf-pipelines.git
+[submodule "kit/repos/bosh-deployment"]
+	path = kit/repos/bosh-deployment
+	url = https://github.com/cloudfoundry/bosh-deployment.git

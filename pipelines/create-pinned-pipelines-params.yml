@@ -1,0 +1,42 @@
+pivnet_token: 
+s3_access_key_id: minio
+s3_secret_access_key: alwaysbekind
+s3_endpoint: http://localhost:9000
+s3_bucket: s3-seed
+s3_region: us-east-1
+atc_external_url: http://localhost:8080
+
+operations_manager_regex: ^1\.11\..*$
+elastic_runtime_regex: ^1\.11\..*$
+gpg_public_key_contents: |
+  -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+  mQENBFm63DgBCADbOTI3cCQrKpeTEvODXkyWeT/f21Jk7SbzZr4oR/SevrPncAsw
+  ORa+CeAPTs40x017XQpTn7DKn2Dhq+l8+2leVhxVx7MWBerScR+uCTq39y/Ivzg1
+  MqV4BZb7a1QIePrdsXqnviqUpQzs2oGpjGHjxm7fwo43ToXJ88PsglWAZkTKq2kb
+  9osDPSTtUhc1eQzGcazfkaPZ7zRTHEFk7uk4wPn35YGogPNV5FrrS9VgodUJ/++X
+  F/DiEMQMcLJxpiLCnmD+t2c/lAj1Eyk50EHLbE8SrdX+O5yP6kAlHFiS8WacvZ8w
+  vc6uHb0hzE/Rog/iksVSOZSRib5Oz8BYa7/VABEBAAG0J01hdHRoZXcgQ2FtcGJl
+  bGwgPG1jYW1wYmVsbEBwaXZvdGFsLmlvPokBVAQTAQgAPhYhBAjdjhsA8ODY+fcp
+  uGUgUpxvckndBQJZutw4AhsDBQkDwmcABQsJCAcCBhUICQoLAgQWAgMBAh4BAheA
+  AAoJEGUgUpxvckndavEH/A1oU9dMvkFxId2muOhNQIk4KQnJCQ5TQSD2eK+RVZ2p
+  xc6OHYgGiD4BUT9kZzsFmcSZSsUHD7W80jfZzamdKpmRDB3fWl0uCbghYCXXIre0
+  c63h2U+Dr0eO8DVXp2kIkQrncB7FZzF/bC3fuZ66l1RQUQHT2ZGSSgl6FR7lupEi
+  B+R3h9GprFGIYTVbmMOy5GbFwgtebiM+jAoncQv/APXEzthhdqZEr0qXbJhtHynx
+  L/21WsEBtnfQ1VzJ4QQzkfq/WLwkbPLe+UVS1f7HMyhkCVMvfYtKf7hHMQZqTkeZ
+  47Nctt4zNKc3LRAiOecUq5rAHRRkn9Qz/ByGrMxTGpq5AQ0EWbrcOAEIAPimRyO8
+  PX2LtmKaaD0Ds6qDnDnfuMAK1PgVljO7WXALeYX4P6jhfREiSDSlXT00zCcxuKLI
+  X4X/jnctUTvmNhpxtfXVZmFtNI6bzV+pSHN/d5vhGiQ/WKvk5qAk93GTVVdrOOY+
+  BTJXYT+XxGXeYg1FFKTELF88rtCvhOV09hURlMZtCg8wroyd8EtVecC4g0ZdEp6g
+  bamX8yaMuzi+elPeaR6CTvraDE9orJKGth8kSxdhFzcsOVbs0KYakHjHmEtrKCTG
+  aMuAyryzsfCwGlxV3bEExA6m83zzR/lJt9aSRyHLjtqlbdd9QS3dAwWzvfcyas64
+  dHqN1fO5y2K/+ZUAEQEAAYkBPAQYAQgAJhYhBAjdjhsA8ODY+fcpuGUgUpxvcknd
+  BQJZutw4AhsMBQkDwmcAAAoJEGUgUpxvckndLtoIAMtgRIR4ImlUx1/4lYq9j6n6
+  gYEB7L6BDnAHCWnznUuR6v8cHNtQSaKCk9aR8VRzg2AlP6ZA9ehlRy7/VvGfN+on
+  5yAZO7mfNAuV9FVWOBX4NGqGLGWrTkMiHh875Ptwi23cTP7L3HNQPT8+2D8H2gzH
+  6WrfOWxBaaSmCSXB16HdtuqY71yGumrcrHp/2jUotUwuc73r43/M6ryL63d21X3N
+  B8tt/VEDVyqCtS5oJT98idGrQviM1HSoBI7Iv0vbP5+fSTnhVrrV/G69UzJbWT8N
+  HYJCatDMnpwIG/T3gI+euyzWLvSQY7Coi8WW+ZTk/GsfXMILfbIEfUB2ke+k6aQ=
+  =cbWY
+  -----END PGP PUBLIC KEY BLOCK-----
+gpg_public_key_email: mcampbell@pivotal.io

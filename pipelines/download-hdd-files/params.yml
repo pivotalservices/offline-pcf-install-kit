@@ -1,0 +1,22 @@
+pivnet_token: 
+s3_access_key_id: minio
+s3_secret_access_key: alwaysbekind
+s3_endpoint: http://minio:9000
+s3_bucket: products
+s3_region: us-east-1
+
+# Pivotal product tiles
+
+mysql_v1_version_regex: ^1\.10\..*$
+mysql_v2_version_regex: ^2\.0\..*$
+sso_version_regex: ^1\.4\..*$
+pcf_metrics_version_regex: ^1\.3\..*$
+cloud_cache_version_regex: ^1\.1\..*$
+redis_version_regex: ^1\.9\..*$
+
+# Bosh add-ons
+
+clamav_version_regex: ^1\.2\..*$
+fim_version_regex: ^1\.2\..*$
+ipsec_version_regex: ^1\.6\..*$
+osconf_version_regex: ^.*$

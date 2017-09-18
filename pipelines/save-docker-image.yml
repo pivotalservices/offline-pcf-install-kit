@@ -1,0 +1,41 @@
+---
+resources:
+- name: nsx-edge-gen
+  type: docker-image
+  source:
+    repository: nsxedgegen/nsx-edge-gen-worker
+- name: s3
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    bucket: mcampbell-darknet-artifacts
+    endpoint: s3-us-west-2.amazonaws.com
+    region_name: us-west-2
+    secret_access_key: {{s3_secret_access_key}}
+    regexp: nsx-edge-gen/nsx-edge-gen-(.*).tgz
+
+jobs:
+
+- name: save-docker-image
+  plan:
+  - get: nsx-edge-gen
+  - task: nsx-edge-gen  
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: nsxedgegen/nsx-edge-gen-worker}
+      inputs:
+        - name: nsx-edge-gen
+      outputs:
+        - name: nsx-edge-image
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          mkdir -p nsx-edge-image
+          tar cvf nsx-edge-image/nsx-edge-gen-0.0.3.tgz -C nsx-edge-gen .
+  - put: s3
+    params:
+      file: nsx-edge-image/nsx-edge-gen-*.tgz
