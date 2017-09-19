@@ -79,11 +79,72 @@ resources:
 
 # Tools
 
-- name: mc
+- name: mc-source
+  type: github-release
+  source:
+    owner: minio
+    repository: mc
+- name: mc-linux-amd64
   type: curl
   source:
     url: https://dl.minio.io/client/mc/release/linux-amd64/mc
     filename: mc
+- name: mc-linux-amd64-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: tools
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: mc-linux-amd64-(.*)
+
+- name: bosh-cli-linux-amd64
+  type: s3
+  source:
+    bucket: bosh-cli-artifacts
+    endpoint: https://s3.amazonaws.com/
+    regexp: bosh-cli-(.*)-linux-amd64
+- name: bosh-cli-linux-amd64-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: tools
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: bosh-cli-(.*)-linux-amd64
+
+- name: cf-cli-linux-amd64
+  type: s3
+  source:
+    bucket: cf-cli-releases
+    endpoint: https://s3-us-west-1.amazonaws.com
+    regexp: releases/v(.*)/cf-cli_.*_linux_x86-64.tgz
+- name: cf-cli-linux-amd64-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: tools
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: cf-cli_(.*)_linux_x86-64.tgz
+
+- name: concourse-pipeline-steamroller
+  type: github-release
+  source:
+    owner: krishicks
+    repository: concourse-pipeline-steamroller
+- name: concourse-pipeline-steamroller-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: tools
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: steamroll-(.*).tgz
 
 # Pivotal Products
 
@@ -252,11 +313,11 @@ resources:
     region_name: {{s3_region}}
     regexp: ipsec-(.*).tgz
 
-- name: osconf
+- name: os-conf
   type: bosh-io-release
   source:
     repository: cloudfoundry/os-conf-release
-- name: osconf-out
+- name: os-conf-out
   type: s3
   source:
     access_key_id: {{s3_access_key_id}}
@@ -264,23 +325,19 @@ resources:
     bucket: products
     endpoint: {{s3_endpoint}}
     region_name: {{s3_region}}
-    regexp: osconf-(.*).tgz
+    regexp: os-conf-release-v(.*).tgz
 
 jobs:
-- name: collector
+- name: tile-collector
   plan:
   - aggregate:
-    - get: mc
+    - get: mc-linux-amd64
     - get: p-mysql-v1
     - get: p-mysql-v2
     - get: p-sso
     - get: p-cloudcache
     - get: pcf-metrics
     - get: p-redis
-    - get: clamav
-    - get: fim
-    - get: ipsec
-    - get: osconf
   - task: create-buckets
     config:
       platform: linux
@@ -288,7 +345,7 @@ jobs:
         type: docker-image
         source: {repository: czero/cflinuxfs2}
       inputs:
-      - name: mc
+      - name: mc-linux-amd64
       params:
         S3_ENDPOINT: {{s3_endpoint}}
         S3_ACCESS_KEY_ID: {{s3_access_key_id}}
@@ -298,19 +355,17 @@ jobs:
         args:
         - -c
         - |
-          ls -lah
-          ls -lah mc
           chmod +x mc/mc
-          mc/mc config host add minio $S3_ENDPOINT $S3_ACCESS_KEY_ID $S3_SECRET_ACCESS_KEY
-          mc/mc mb minio/products || true
-          mc/mc mb minio/stemcells || true
+          mc-linux-amd64/mc config host add minio $S3_ENDPOINT $S3_ACCESS_KEY_ID $S3_SECRET_ACCESS_KEY
+          mc-linux-amd64/mc mb minio/products || true
+          mc-linux-amd64/mc mb minio/stemcells || true
 
 - name: save-mysql-v1
   plan:
   - get: pivnet-product
     resource: p-mysql-v1
     trigger: true
-    passed: [collector]
+    passed: [tile-collector]
   - task: download-stemcell
     <<: *download_stemcell_config
   - put: stemcells-out
@@ -324,7 +379,7 @@ jobs:
   - get: pivnet-product
     resource: p-mysql-v2
     trigger: true
-    passed: [collector]
+    passed: [tile-collector]
   - task: download-stemcell
     <<: *download_stemcell_config
   - put: stemcells-out
@@ -338,7 +393,7 @@ jobs:
   - get: pivnet-product
     resource: p-sso
     trigger: true
-    passed: [collector]
+    passed: [tile-collector]
   - task: download-stemcell
     <<: *download_stemcell_config
   - put: stemcells-out
@@ -352,7 +407,7 @@ jobs:
   - get: pivnet-product
     resource: p-cloudcache
     trigger: true
-    passed: [collector]
+    passed: [tile-collector]
   - task: download-stemcell
     <<: *download_stemcell_config
   - put: stemcells-out
@@ -366,7 +421,7 @@ jobs:
   - get: pivnet-product
     resource: pcf-metrics
     trigger: true
-    passed: [collector]
+    passed: [tile-collector]
   - task: download-stemcell
     <<: *download_stemcell_config
   - put: stemcells-out
@@ -380,7 +435,7 @@ jobs:
   - get: pivnet-product
     resource: p-redis
     trigger: true
-    passed: [collector]
+    passed: [tile-collector]
   - task: download-stemcell
     <<: *download_stemcell_config
   - put: stemcells-out
@@ -390,11 +445,39 @@ jobs:
     params:
       file: pivnet-product/*.pivotal
 
+- name: addon-collector
+  plan:
+  - aggregate:
+    - get: mc-linux-amd64
+    - get: clamav
+    - get: fim
+    - get: ipsec
+    - get: os-conf
+  - task: create-buckets
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: czero/cflinuxfs2}
+      inputs:
+      - name: mc-linux-amd64
+      params:
+        S3_ENDPOINT: {{s3_endpoint}}
+        S3_ACCESS_KEY_ID: {{s3_access_key_id}}
+        S3_SECRET_ACCESS_KEY: {{s3_secret_access_key}}
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          chmod +x mc/mc
+          mc-linux-amd64/mc config host add minio $S3_ENDPOINT $S3_ACCESS_KEY_ID $S3_SECRET_ACCESS_KEY
+          mc-linux-amd64/mc mb minio/products || true
 - name: download-clamav
   plan:
   - get: clamav
     trigger: true
-    passed: [collector]
+    passed: [addon-collector]
   - put: clamav-out
     params:
       file: clamav/*.tgz
@@ -402,7 +485,7 @@ jobs:
   plan:
   - get: fim
     trigger: true
-    passed: [collector]
+    passed: [addon-collector]
   - put: fim-out
     params:
       file: fim/*.tgz
@@ -410,15 +493,98 @@ jobs:
   plan:
   - get: ipsec
     trigger: true
-    passed: [collector]
+    passed: [addon-collector]
   - put: ipsec-out
     params:
       file: ipsec/*.tgz
-- name: download-osconf
+- name: download-os-conf
   plan:
-  - get: osconf
+  - get: os-conf
     trigger: true
-    passed: [collector]
-  - put: osconf-out
+    passed: [addon-collector]
+  - task: rename-release
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: czero/cflinuxfs2}
+      inputs:
+      - name: os-conf
+      outputs:
+      - name: os-conf-out
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          set -ex
+          VERSION=v$(cat os-conf/version)
+          mv os-conf/release.tgz os-conf-out/os-conf-release-$VERSION.tgz
+  - put: os-conf-out
     params:
-      file: osconf/*.tgz
+      file: os-conf-out/*.tgz
+      
+- name: tool-collector
+  plan:
+  - aggregate:
+    - get: mc-linux-amd64
+    - get: mc-source
+    - get: bosh-cli-linux-amd64
+    - get: cf-cli-linux-amd64
+    - get: concourse-pipeline-steamroller
+  - task: create-buckets
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: czero/cflinuxfs2}
+      inputs:
+      - name: mc-linux-amd64
+      params:
+        S3_ENDPOINT: {{s3_endpoint}}
+        S3_ACCESS_KEY_ID: {{s3_access_key_id}}
+        S3_SECRET_ACCESS_KEY: {{s3_secret_access_key}}
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          chmod +x mc/mc
+          mc-linux-amd64/mc config host add minio $S3_ENDPOINT $S3_ACCESS_KEY_ID $S3_SECRET_ACCESS_KEY
+          mc-linux-amd64/mc mb minio/tools || true
+  - task: prepare-releases
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: czero/cflinuxfs2}
+      inputs:
+      - name: mc-linux-amd64
+      - name: mc-source
+      - name: concourse-pipeline-steamroller
+      outputs:
+      - name: mc-linux-amd64-out
+      - name: concourse-pipeline-steamroller-out
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          set -ex
+          MC_VERSION=v$(cat mc-source/version)
+          mv mc-linux-amd64/mc mc-linux-amd64-out/mc-linux-amd64-$MC_VERSION
+          
+          STEAMROLL_VERSION=$(cat concourse-pipeline-steamroller/version)
+          tar -czvf concourse-pipeline-steamroller-out/steamroll-$STEAMROLL_VERSION.tgz -C concourse-pipeline-steamroller .
+  - put: mc-linux-amd64-out
+    params:
+      file: mc-linux-amd64-out/mc-linux-amd64-*
+  - put: bosh-cli-linux-amd64-out
+    params:
+      file: bosh-cli-linux-amd64/bosh-cli-*
+  - put: cf-cli-linux-amd64-out
+    params:
+      file: cf-cli-linux-amd64/*.tgz
+  - put: concourse-pipeline-steamroller-out
+    params:
+      file: concourse-pipeline-steamroller-out/steamroll-*.tgz
