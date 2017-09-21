@@ -1,0 +1,595 @@
+groups:
+- name: all
+  jobs:
+  - nsx-edge-gen
+  - nsx-edge-destroy
+- name: nsx-edge-gen
+  jobs:
+  - nsx-edge-gen
+- name: nsx-edge-destroy
+  jobs:
+  - nsx-edge-destroy
+resources:
+- name: nsx-edge-gen
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    bucket: {{s3_bucket}}
+    endpoint: {{s3_endpoint}}
+    regexp: nsx-edge-gen-(.*).tgz
+    region_name: {{s3_region}}
+    secret_access_key: {{s3_secret_access_key}}
+jobs:
+- name: nsx-edge-gen
+  plan:
+  - aggregate:
+    # - get: concourse-vsphere
+    - get: nsx-edge-gen
+      params:
+        unpack: true
+  - task: nsx-edge-gen
+    config:
+      platform: linux
+      image_resource:
+        type: s3
+        source:
+          access_key_id: {{s3_access_key_id}}
+          bucket: {{s3_bucket}}
+          endpoint: {{s3_endpoint}}
+          regexp: nsx-edge-gen-image/nsx-edge-gen-(.*).tar
+          region_name: {{s3_region}}
+          secret_access_key: {{s3_secret_access_key}}
+        params:
+          unpack: true
+      params:
+        ESG_CLI_PASSWORD_1: ""
+        ESG_CLI_USERNAME_1: ""
+        ESG_DEFAULT_UPLINK_IP_1: ""
+        ESG_DEFAULT_UPLINK_PG_1: ""
+        ESG_DIEGO_BRAIN_INSTANCES_1: ""
+        ESG_DIEGO_BRAIN_UPLINK_IP_1: ""
+        ESG_ERT_CERTS_CONFIG_APPDOMAIN_1: ""
+        ESG_ERT_CERTS_CONFIG_COUNTRY_1: ""
+        ESG_ERT_CERTS_CONFIG_OU_1: ""
+        ESG_ERT_CERTS_CONFIG_SYSTEMDOMAIN_1: ""
+        ESG_ERT_CERTS_NAME_1: ""
+        ESG_GATEWAY_1: ""
+        ESG_GO_ROUTER_INSTANCES_1: ""
+        ESG_GO_ROUTER_ISOZONE_1_INST_1: ""
+        ESG_GO_ROUTER_ISOZONE_1_SWITCH_1: ""
+        ESG_GO_ROUTER_ISOZONE_1_UPLINK_IP_1: ""
+        ESG_GO_ROUTER_ISOZONE_2_INST_1: ""
+        ESG_GO_ROUTER_ISOZONE_2_SWITCH_1: ""
+        ESG_GO_ROUTER_ISOZONE_2_UPLINK_IP_1: ""
+        ESG_GO_ROUTER_ISOZONE_3_INST_1: ""
+        ESG_GO_ROUTER_ISOZONE_3_SWITCH_1: ""
+        ESG_GO_ROUTER_ISOZONE_3_UPLINK_IP_1: ""
+        ESG_GO_ROUTER_UPLINK_IP_1: ""
+        ESG_ISO_CERTS_CONFIG_COUNTRY_1_1: ""
+        ESG_ISO_CERTS_CONFIG_DOMAIN_1_1: ""
+        ESG_ISO_CERTS_CONFIG_OU_1_1: ""
+        ESG_ISO_CERTS_NAME_1_1: ""
+        ESG_ISO_CERTS_SWITCH_1_1: ""
+        ESG_MYSQL_ERT_PROXY_INSTANCES_1: ""
+        ESG_MYSQL_TILE_PROXY_INSTANCES_1: ""
+        ESG_OPSMGR_UPLINK_IP_1: ""
+        ESG_OSPF_PASSWORD_1: ""
+        ESG_RABBITMQ_TILE_PROXY_INSTANCES_1: ""
+        ESG_SIZE: ""
+        ESG_TCP_ROUTER_INSTANCES_1: ""
+        ESG_TCP_ROUTER_ISOZONE_1_INST_1: ""
+        ESG_TCP_ROUTER_ISOZONE_1_SWITCH_1: ""
+        ESG_TCP_ROUTER_ISOZONE_1_UPLINK_IP_1: ""
+        ESG_TCP_ROUTER_ISOZONE_2_INST_1: ""
+        ESG_TCP_ROUTER_ISOZONE_2_SWITCH_1: ""
+        ESG_TCP_ROUTER_ISOZONE_2_UPLINK_IP_1: ""
+        ESG_TCP_ROUTER_ISOZONE_3_INST_1: ""
+        ESG_TCP_ROUTER_ISOZONE_3_SWITCH_1: ""
+        ESG_TCP_ROUTER_ISOZONE_3_UPLINK_IP_1: ""
+        ESG_TCP_ROUTER_UPLINK_IP_1: ""
+        ISOZONE_SWITCH_CIDR_1: ""
+        ISOZONE_SWITCH_CIDR_2: ""
+        ISOZONE_SWITCH_CIDR_3: ""
+        ISOZONE_SWITCH_NAME_1: ""
+        ISOZONE_SWITCH_NAME_2: ""
+        ISOZONE_SWITCH_NAME_3: ""
+        NSX_EDGE_GEN_BOSH_NSX_ENABLED: ""
+        NSX_EDGE_GEN_EDGE_CLUSTER: ""
+        NSX_EDGE_GEN_EDGE_DATASTORE: ""
+        NSX_EDGE_GEN_ENABLE_DLR: ""
+        NSX_EDGE_GEN_NAME: ""
+        NSX_EDGE_GEN_NSX_MANAGER_ADDRESS: ""
+        NSX_EDGE_GEN_NSX_MANAGER_ADMIN_PASSWD: ""
+        NSX_EDGE_GEN_NSX_MANAGER_ADMIN_USER: ""
+        NSX_EDGE_GEN_NSX_MANAGER_DISTRIBUTED_PORTGROUP: ""
+        NSX_EDGE_GEN_NSX_MANAGER_TRANSPORT_ZONE: ""
+        NSX_EDGE_GEN_NSX_MANAGER_TRANSPORT_ZONE_CLUSTERS: ""
+        VCENTER_DATA_CENTER: ""
+        VCENTER_HOST: ""
+        VCENTER_PWD: ""
+        VCENTER_USR: ""
+      run:
+        path: sh
+        args:
+        - -c
+        - "cat > task.sh <<'EO_SH'\n#!/bin/bash\nset -ex\n\n\npushd nsx-edge-gen  >/dev/null
+          2>&1\n\n# Remove any existing config file template from the repo\nif [[
+          -e nsx_cloud_config.yml ]]; then rm -rf nsx_cloud_config.yml; fi\n\n\n#
+          Init new config file template\n./nsx-gen/bin/nsxgen -i $NSX_EDGE_GEN_NAME
+          init\nARGS=\" \"\n\nif [ \"$ISOZONE_SWITCH_NAME_1\" != \"\" ]; then\n  ARGS=\"$ARGS
+          \n  -isozone_switch_name_1 $ISOZONE_SWITCH_NAME_1\n  -isozone_switch_cidr_1
+          $ISOZONE_SWITCH_CIDR_1\n  -esg_go_router_isozone_1_uplink_ip_1 $ESG_GO_ROUTER_ISOZONE_1_UPLINK_IP_1\n
+          \ -esg_go_router_isozone_1_switch_1 $ISOZONE_SWITCH_NAME_1\n  -esg_go_router_isozone_1_inst_1
+          $ESG_GO_ROUTER_ISOZONE_1_INST_1\n  -esg_tcp_router_isozone_1_uplink_ip_1
+          $ESG_TCP_ROUTER_ISOZONE_1_UPLINK_IP_1\n  -esg_tcp_router_isozone_1_switch_1
+          $ISOZONE_SWITCH_NAME_1\n  -esg_tcp_router_isozone_1_inst_1 $ESG_TCP_ROUTER_ISOZONE_1_INST_1\n
+          \  \"\n\n  if [ \"$ESG_ISO_CERTS_CONFIG_DOMAINS_1_1\" != \"\" ]; then\n
+          \   ARGS=\"$ARGS \n    -esg_iso_certs_1_1 $ESG_ISO_CERTS_NAME_1_1\n    -esg_iso_certs_config_switch_1_1
+          $ESG_ISO_CERTS_SWITCH_1_1\n    -esg_iso_certs_config_ou_1_1 $ESG_ISO_CERTS_CONFIG_OU_1_1\n
+          \   -esg_iso_certs_config_cc_1_1 $ESG_ISO_CERTS_CONFIG_COUNTRY_1_1\n    -esg_iso_certs_config_domains_1_1
+          $ESG_ISO_CERTS_CONFIG_DOMAINS_1_1\n     \"\n  fi\nfi\n\nif [ \"$ISOZONE_SWITCH_NAME_2\"
+          != \"\" ]; then\n  ARGS=\"$ARGS \n  -isozone_switch_name_2 $ISOZONE_SWITCH_NAME_2\n
+          \ -isozone_switch_cidr_2 $ISOZONE_SWITCH_CIDR_2\n  -esg_go_router_isozone_2_uplink_ip_1
+          $ESG_GO_ROUTER_ISOZONE_2_UPLINK_IP_1\n  -esg_go_router_isozone_2_switch_1
+          $ISOZONE_SWITCH_NAME_2\n  -esg_go_router_isozone_2_inst_1 $ESG_GO_ROUTER_ISOZONE_2_INST_1\n
+          \ -esg_tcp_router_isozone_2_uplink_ip_1 $ESG_TCP_ROUTER_ISOZONE_2_UPLINK_IP_1\n
+          \ -esg_tcp_router_isozone_2_switch_1 $ISOZONE_SWITCH_NAME_2\n  -esg_tcp_router_isozone_2_inst_1
+          $ESG_TCP_ROUTER_ISOZONE_2_INST_1\n  \"\n\n  if [ \"$ESG_ISO_CERTS_CONFIG_DOMAINS_2_1\"
+          != \"\" ]; then\n    ARGS=\"$ARGS \n    -esg_iso_certs_2_1 $ESG_ISO_CERTS_NAME_2_1\n
+          \   -esg_iso_certs_config_switch_2_1 $ESG_ISO_CERTS_SWITCH_2_1\n    -esg_iso_certs_config_ou_2_1
+          $ESG_ISO_CERTS_CONFIG_OU_2_1\n    -esg_iso_certs_config_cc_2_1 $ESG_ISO_CERTS_CONFIG_COUNTRY_2_1\n
+          \   -esg_iso_certs_config_domains_2_1 $ESG_ISO_CERTS_CONFIG_DOMAINS_2_1\n
+          \    \"\n  fi\nfi\n\nif [ \"$ISOZONE_SWITCH_NAME_3\" != \"\" ]; then\n  ARGS=\"$ARGS
+          \n  -isozone_switch_name_3 $ISOZONE_SWITCH_NAME_3\n  -isozone_switch_cidr_3
+          $ISOZONE_SWITCH_CIDR_3\n  -esg_go_router_isozone_3_uplink_ip_1 $ESG_GO_ROUTER_ISOZONE_3_UPLINK_IP_1\n
+          \ -esg_go_router_isozone_3_switch_1 $ISOZONE_SWITCH_NAME_3\n  -esg_go_router_isozone_3_inst_1
+          $ESG_GO_ROUTER_ISOZONE_3_INST_1\n  -esg_tcp_router_isozone_3_uplink_ip_1
+          $ESG_TCP_ROUTER_ISOZONE_3_UPLINK_IP_1\n  -esg_tcp_router_isozone_3_switch_1
+          $ISOZONE_SWITCH_NAME_3\n  -esg_tcp_router_isozone_3_inst_1 $ESG_TCP_ROUTER_ISOZONE_3_INST_1\n
+          \ \"\n\n  if [ \"$ESG_ISO_CERTS_CONFIG_DOMAINS_3_1\" != \"\" ]; then\n    ARGS=\"$ARGS
+          \n    -esg_iso_certs_3_1 $ESG_ISO_CERTS_NAME_3_1\n    -esg_iso_certs_config_switch_3_1
+          $ESG_ISO_CERTS_SWITCH_3_1\n    -esg_iso_certs_config_ou_3_1 $ESG_ISO_CERTS_CONFIG_OU_3_1\n
+          \   -esg_iso_certs_config_cc_3_1 $ESG_ISO_CERTS_CONFIG_COUNTRY_3_1\n    -esg_iso_certs_config_domains_3_1
+          $ESG_ISO_CERTS_CONFIG_DOMAINS_3_1\n     \"\n  fi\nfi\n\n\n./nsx-gen/bin/nsxgen
+          \\\n-c $NSX_EDGE_GEN_NAME \\\n-esg_name_1 $NSX_EDGE_GEN_NAME \\\n-esg_size_1
+          $ESG_SIZE  \\\n-esg_ospf_password_1 $ESG_OSPF_PASSWORD_1  \\\n-esg_cli_user_1
+          $ESG_CLI_USERNAME_1   \\\n-esg_cli_pass_1 $ESG_CLI_PASSWORD_1   \\\n-esg_ert_certs_1
+          $ESG_ERT_CERTS_NAME_1   \\\n-esg_ert_certs_config_sysd_1 $ESG_ERT_CERTS_CONFIG_SYSTEMDOMAIN_1
+          \  \\\n-esg_ert_certs_config_appd_1 $ESG_ERT_CERTS_CONFIG_APPDOMAIN_1   \\\n-esg_opsmgr_uplink_ip_1
+          $ESG_OPSMGR_UPLINK_IP_1   \\\n-esg_go_router_uplink_ip_1 $ESG_GO_ROUTER_UPLINK_IP_1
+          \  \\\n-esg_diego_brain_uplink_ip_1 $ESG_DIEGO_BRAIN_UPLINK_IP_1   \\\n-esg_tcp_router_uplink_ip_1
+          $ESG_TCP_ROUTER_UPLINK_IP_1   \\\n-esg_go_router_inst_1 $ESG_GO_ROUTER_INSTANCES_1
+          \\\n-esg_diego_brain_inst_1 $ESG_DIEGO_BRAIN_INSTANCES_1 \\\n-esg_tcp_router_inst_1
+          $ESG_TCP_ROUTER_INSTANCES_1 \\\n-esg_mysql_ert_inst_1 $ESG_MYSQL_ERT_PROXY_INSTANCES_1
+          \\\n-esg_mysql_tile_inst_1 $ESG_MYSQL_TILE_PROXY_INSTANCES_1  \\\n-esg_rabbitmq_tile_inst_1
+          $ESG_RABBITMQ_TILE_PROXY_INSTANCES_1 \\\n-esg_gateway_1 $ESG_GATEWAY_1 \\\n-vcenter_addr
+          $VCENTER_HOST   \\\n-vcenter_user $VCENTER_USR   \\\n-vcenter_pass $VCENTER_PWD
+          \  \\\n-vcenter_dc $VCENTER_DATA_CENTER   \\\n-vcenter_ds $NSX_EDGE_GEN_EDGE_DATASTORE
+          \  \\\n-vcenter_cluster $NSX_EDGE_GEN_EDGE_CLUSTER  \\\n-nsxmanager_addr
+          $NSX_EDGE_GEN_NSX_MANAGER_ADDRESS   \\\n-nsxmanager_user $NSX_EDGE_GEN_NSX_MANAGER_ADMIN_USER
+          \  \\\n-nsxmanager_pass $NSX_EDGE_GEN_NSX_MANAGER_ADMIN_PASSWD   \\\n-nsxmanager_tz
+          \"$NSX_EDGE_GEN_NSX_MANAGER_TRANSPORT_ZONE\"   \\\n-nsxmanager_tz_clusters
+          \"$NSX_EDGE_GEN_NSX_MANAGER_TRANSPORT_ZONE_CLUSTERS\" \\\n-nsxmanager_dportgroup
+          \"$NSX_EDGE_GEN_NSX_MANAGER_DISTRIBUTED_PORTGROUP\" \\\n-nsxmanager_uplink_ip
+          $ESG_DEFAULT_UPLINK_IP_1  \\\n-nsxmanager_uplink_port \"$ESG_DEFAULT_UPLINK_PG_1\"
+          \\\n-nsxmanager_en_dlr $NSX_EDGE_GEN_ENABLE_DLR \\\n-nsxmanager_bosh_nsx_enabled
+          $NSX_EDGE_GEN_BOSH_NSX_ENABLED \\\n$ARGS \\\nbuild \n\nSTATUS=$?\npopd  >/dev/null
+          2>&1\n\nexit $STATUS\n\nEO_SH\n\nchmod +x task.sh\n./task.sh\n"
+        dir: ""
+      inputs:
+      - name: nsx-edge-gen
+        path: ""
+    params:
+      ESG_CLI_PASSWORD_1: {{esg_cli_password_1}}
+      ESG_CLI_USERNAME_1: {{esg_cli_username_1}}
+      ESG_DEFAULT_UPLINK_IP_1: {{esg_default_uplink_ip_1}}
+      ESG_DEFAULT_UPLINK_PG_1: {{esg_default_uplink_pg_1}}
+      ESG_DIEGO_BRAIN_INSTANCES_1: {{diego_brain_instances}}
+      ESG_DIEGO_BRAIN_UPLINK_IP_1: {{esg_diego_brain_uplink_ip_1}}
+      ESG_ERT_CERTS_CONFIG_APPDOMAIN_1: {{apps_domain}}
+      ESG_ERT_CERTS_CONFIG_COUNTRY: {{ert_certs_country}}
+      ESG_ERT_CERTS_CONFIG_OU: {{ert_certs_ou}}
+      ESG_ERT_CERTS_CONFIG_SYSTEMDOMAIN_1: {{system_domain}}
+      ESG_ERT_CERTS_NAME_1: {{ert_certs_name_1}}
+      ESG_GATEWAY_1: {{esg_gateway_1}}
+      ESG_GO_ROUTER_INSTANCES_1: {{router_instances}}
+      ESG_GO_ROUTER_ISOZONE_1_INST_1: {{esg_go_router_isozone_1_inst_1}}
+      ESG_GO_ROUTER_ISOZONE_1_SWITCH_1: {{isozone_switch_name_1}}
+      ESG_GO_ROUTER_ISOZONE_1_UPLINK_IP_1: {{esg_go_router_isozone_1_uplink_ip_1}}
+      ESG_GO_ROUTER_UPLINK_IP_1: {{esg_go_router_uplink_ip_1}}
+      ESG_MYSQL_ERT_PROXY_INSTANCES_1: {{mysql_proxy_instances}}
+      ESG_MYSQL_TILE_PROXY_INSTANCES_1: {{tile_mysql_proxy_instances}}
+      ESG_OPSMGR_UPLINK_IP_1: {{esg_opsmgr_uplink_ip_1}}
+      ESG_OSPF_PASSWORD_1: {{esg_ospf_password_1}}
+      ESG_RABBITMQ_TILE_PROXY_INSTANCES_1: {{tile_rabbit_proxy_instances}}
+      ESG_SIZE: {{esg_size}}
+      ESG_TCP_ROUTER_INSTANCES_1: {{tcp_router_instances}}
+      ESG_TCP_ROUTER_ISOZONE_1_INST_1: {{esg_tcp_router_isozone_1_inst_1}}
+      ESG_TCP_ROUTER_ISOZONE_1_SWITCH_1: {{isozone_switch_name_1}}
+      ESG_TCP_ROUTER_ISOZONE_1_UPLINK_IP_1: {{esg_tcp_router_isozone_1_uplink_ip_1}}
+      ESG_TCP_ROUTER_UPLINK_IP_1: {{esg_tcp_router_uplink_ip_1}}
+      NSX_EDGE_GEN_BOSH_NSX_ENABLED: {{nsx_edge_gen_bosh_nsx_enabled}}
+      NSX_EDGE_GEN_EDGE_CLUSTER: {{nsx_edge_gen_egde_cluster}}
+      NSX_EDGE_GEN_EDGE_DATASTORE: {{nsx_edge_gen_egde_datastore}}
+      NSX_EDGE_GEN_ENABLE_DLR: {{nsx_edge_gen_enable_dlr}}
+      NSX_EDGE_GEN_NAME: {{nsx_edge_gen_name}}
+      NSX_EDGE_GEN_NSX_MANAGER_ADDRESS: {{nsx_edge_gen_nsx_manager_address}}
+      NSX_EDGE_GEN_NSX_MANAGER_ADMIN_PASSWD: {{nsx_edge_gen_nsx_manager_admin_passwd}}
+      NSX_EDGE_GEN_NSX_MANAGER_ADMIN_USER: {{nsx_edge_gen_nsx_manager_admin_user}}
+      NSX_EDGE_GEN_NSX_MANAGER_DISTRIBUTED_PORTGROUP: {{nsx_edge_gen_nsx_manager_distributed_portgroup}}
+      NSX_EDGE_GEN_NSX_MANAGER_TRANSPORT_ZONE: {{nsx_edge_gen_nsx_manager_transport_zone}}
+      VCENTER_DATA_CENTER: {{vcenter_data_center}}
+      VCENTER_HOST: {{vcenter_host}}
+      VCENTER_PWD: {{vcenter_pwd}}
+      VCENTER_USR: {{vcenter_usr}}
+  - task: nsx-edge-list
+    config:
+      platform: linux
+      image_resource:
+        type: s3
+        source:
+          access_key_id: {{s3_access_key_id}}
+          bucket: {{s3_bucket}}
+          endpoint: {{s3_endpoint}}
+          regexp: nsx-edge-gen-image/nsx-edge-gen-(.*).tar
+          region_name: {{s3_region}}
+          secret_access_key: {{s3_secret_access_key}}
+        params:
+          unpack: true
+      params:
+        ESG_CLI_PASSWORD_1: ""
+        ESG_CLI_USERNAME_1: ""
+        ESG_DEFAULT_UPLINK_IP_1: ""
+        ESG_DEFAULT_UPLINK_PG_1: ""
+        ESG_DIEGO_BRAIN_INSTANCES_1: ""
+        ESG_DIEGO_BRAIN_UPLINK_IP_1: ""
+        ESG_ERT_CERTS_CONFIG_APPDOMAIN_1: ""
+        ESG_ERT_CERTS_CONFIG_COUNTRY_1: ""
+        ESG_ERT_CERTS_CONFIG_OU_1: ""
+        ESG_ERT_CERTS_CONFIG_SYSTEMDOMAIN_1: ""
+        ESG_ERT_CERTS_NAME_1: ""
+        ESG_GATEWAY_1: ""
+        ESG_GO_ROUTER_INSTANCES_1: ""
+        ESG_GO_ROUTER_ISOZONE_1_INST_1: ""
+        ESG_GO_ROUTER_ISOZONE_1_SWITCH_1: ""
+        ESG_GO_ROUTER_ISOZONE_1_UPLINK_IP_1: ""
+        ESG_GO_ROUTER_ISOZONE_2_INST_1: ""
+        ESG_GO_ROUTER_ISOZONE_2_SWITCH_1: ""
+        ESG_GO_ROUTER_ISOZONE_2_UPLINK_IP_1: ""
+        ESG_GO_ROUTER_ISOZONE_3_INST_1: ""
+        ESG_GO_ROUTER_ISOZONE_3_SWITCH_1: ""
+        ESG_GO_ROUTER_ISOZONE_3_UPLINK_IP_1: ""
+        ESG_GO_ROUTER_UPLINK_IP_1: ""
+        ESG_ISO_CERTS_CONFIG_COUNTRY_1_1: ""
+        ESG_ISO_CERTS_CONFIG_DOMAIN_1_1: ""
+        ESG_ISO_CERTS_CONFIG_OU_1_1: ""
+        ESG_ISO_CERTS_NAME_1_1: ""
+        ESG_ISO_CERTS_SWITCH_1_1: ""
+        ESG_MYSQL_ERT_PROXY_INSTANCES_1: ""
+        ESG_MYSQL_TILE_PROXY_INSTANCES_1: ""
+        ESG_OPSMGR_UPLINK_IP_1: ""
+        ESG_OSPF_PASSWORD_1: ""
+        ESG_RABBITMQ_TILE_PROXY_INSTANCES_1: ""
+        ESG_TCP_ROUTER_INSTANCES_1: ""
+        ESG_TCP_ROUTER_ISOZONE_1_INST_1: ""
+        ESG_TCP_ROUTER_ISOZONE_1_SWITCH_1: ""
+        ESG_TCP_ROUTER_ISOZONE_1_UPLINK_IP_1: ""
+        ESG_TCP_ROUTER_ISOZONE_2_INST_1: ""
+        ESG_TCP_ROUTER_ISOZONE_2_SWITCH_1: ""
+        ESG_TCP_ROUTER_ISOZONE_2_UPLINK_IP_1: ""
+        ESG_TCP_ROUTER_ISOZONE_3_INST_1: ""
+        ESG_TCP_ROUTER_ISOZONE_3_SWITCH_1: ""
+        ESG_TCP_ROUTER_ISOZONE_3_UPLINK_IP_1: ""
+        ESG_TCP_ROUTER_UPLINK_IP_1: ""
+        ISOZONE_SWITCH_CIDR_1: ""
+        ISOZONE_SWITCH_CIDR_2: ""
+        ISOZONE_SWITCH_CIDR_3: ""
+        ISOZONE_SWITCH_NAME_1: ""
+        ISOZONE_SWITCH_NAME_2: ""
+        ISOZONE_SWITCH_NAME_3: ""
+        NSX_EDGE_GEN_BOSH_NSX_ENABLED: ""
+        NSX_EDGE_GEN_EDGE_CLUSTER: ""
+        NSX_EDGE_GEN_EDGE_DATASTORE: ""
+        NSX_EDGE_GEN_ENABLE_DLR: ""
+        NSX_EDGE_GEN_NAME: ""
+        NSX_EDGE_GEN_NSX_MANAGER_ADDRESS: ""
+        NSX_EDGE_GEN_NSX_MANAGER_ADMIN_PASSWD: ""
+        NSX_EDGE_GEN_NSX_MANAGER_ADMIN_USER: ""
+        NSX_EDGE_GEN_NSX_MANAGER_DISTRIBUTED_PORTGROUP: ""
+        NSX_EDGE_GEN_NSX_MANAGER_TRANSPORT_ZONE: ""
+        NSX_EDGE_GEN_NSX_MANAGER_TRANSPORT_ZONE_CLUSTERS: ""
+        VCENTER_DATA_CENTER: ""
+        VCENTER_HOST: ""
+        VCENTER_PWD: ""
+        VCENTER_USR: ""
+      run:
+        path: sh
+        args:
+        - -c
+        - "cat > task.sh <<'EO_SH'\n#!/bin/bash\nset -ex\n\nexport ROOT_DIR=`pwd`\nexport
+          SCRIPT_DIR=$(dirname $0)\n#echo pwd is $PWD and `pwd`\n#echo SCRIPT_DIR
+          is $SCRIPT_DIR\nexport NSX_GEN_OUTPUT_DIR=\"${ROOT_DIR}/nsx-gen-output\"\nmkdir
+          -p ${NSX_GEN_OUTPUT_DIR}\n\nexport NSX_GEN_OUTPUT=${NSX_GEN_OUTPUT_DIR}/nsx-gen-out.log\nexport
+          NSX_GEN_UTIL=\"${SCRIPT_DIR}/nsx_parse_util.sh\"\n\npushd nsx-edge-gen  >/dev/null
+          2>&1\n\n\n# Remove any existing config file template from the repo\nif [[
+          -e nsx_cloud_config.yml ]]; then rm -rf nsx_cloud_config.yml; fi\n\n# Init
+          new config file template\n./nsx-gen/bin/nsxgen -i $NSX_EDGE_GEN_NAME init\nARGS=\"
+          \"\n\nif [ \"$ISOZONE_SWITCH_NAME_1\" != \"\" ]; then\n  ARGS=\"$ARGS \n
+          \ -isozone_switch_name_1 $ISOZONE_SWITCH_NAME_1\n  -isozone_switch_cidr_1
+          $ISOZONE_SWITCH_CIDR_1\n  -esg_go_router_isozone_1_uplink_ip_1 $ESG_GO_ROUTER_ISOZONE_1_UPLINK_IP_1\n
+          \ -esg_go_router_isozone_1_switch_1 $ISOZONE_SWITCH_NAME_1\n  -esg_go_router_isozone_1_inst_1
+          $ESG_GO_ROUTER_ISOZONE_1_INST_1\n  -esg_tcp_router_isozone_1_uplink_ip_1
+          $ESG_TCP_ROUTER_ISOZONE_1_UPLINK_IP_1\n  -esg_tcp_router_isozone_1_switch_1
+          $ISOZONE_SWITCH_NAME_1\n  -esg_tcp_router_isozone_1_inst_1 $ESG_TCP_ROUTER_ISOZONE_1_INST_1\n
+          \  \"\n\n  if [ \"$ESG_ISO_CERTS_CONFIG_DOMAINS_1_1\" != \"\" ]; then\n
+          \   ARGS=\"$ARGS \n    -esg_iso_certs_1_1 $ESG_ISO_CERTS_NAME_1_1\n    -esg_iso_certs_config_switch_1_1
+          $ESG_ISO_CERTS_SWITCH_1_1\n    -esg_iso_certs_config_ou_1_1 $ESG_ISO_CERTS_CONFIG_OU_1_1\n
+          \   -esg_iso_certs_config_cc_1_1 $ESG_ISO_CERTS_CONFIG_COUNTRY_1_1\n    -esg_iso_certs_config_domains_1_1
+          $ESG_ISO_CERTS_CONFIG_DOMAINS_1_1\n     \"\n  fi\nfi\n\nif [ \"$ISOZONE_SWITCH_NAME_2\"
+          != \"\" ]; then\n  ARGS=\"$ARGS \n  -isozone_switch_name_2 $ISOZONE_SWITCH_NAME_2\n
+          \ -isozone_switch_cidr_2 $ISOZONE_SWITCH_CIDR_2\n  -esg_go_router_isozone_2_uplink_ip_1
+          $ESG_GO_ROUTER_ISOZONE_2_UPLINK_IP_1\n  -esg_go_router_isozone_2_switch_1
+          $ISOZONE_SWITCH_NAME_2\n  -esg_go_router_isozone_2_inst_1 $ESG_GO_ROUTER_ISOZONE_2_INST_1\n
+          \ -esg_tcp_router_isozone_2_uplink_ip_1 $ESG_TCP_ROUTER_ISOZONE_2_UPLINK_IP_1\n
+          \ -esg_tcp_router_isozone_2_switch_1 $ISOZONE_SWITCH_NAME_2\n  -esg_tcp_router_isozone_2_inst_1
+          $ESG_TCP_ROUTER_ISOZONE_2_INST_1\n  \"\n\n  if [ \"$ESG_ISO_CERTS_CONFIG_DOMAINS_2_1\"
+          != \"\" ]; then\n    ARGS=\"$ARGS \n    -esg_iso_certs_2_1 $ESG_ISO_CERTS_NAME_2_1\n
+          \   -esg_iso_certs_config_switch_2_1 $ESG_ISO_CERTS_SWITCH_2_1\n    -esg_iso_certs_config_ou_2_1
+          $ESG_ISO_CERTS_CONFIG_OU_2_1\n    -esg_iso_certs_config_cc_2_1 $ESG_ISO_CERTS_CONFIG_COUNTRY_2_1\n
+          \   -esg_iso_certs_config_domains_2_1 $ESG_ISO_CERTS_CONFIG_DOMAINS_2_1\n
+          \    \"\n  fi\nfi\n\nif [ \"$ISOZONE_SWITCH_NAME_3\" != \"\" ]; then\n  ARGS=\"$ARGS
+          \n  -isozone_switch_name_3 $ISOZONE_SWITCH_NAME_3\n  -isozone_switch_cidr_3
+          $ISOZONE_SWITCH_CIDR_3\n  -esg_go_router_isozone_3_uplink_ip_1 $ESG_GO_ROUTER_ISOZONE_3_UPLINK_IP_1\n
+          \ -esg_go_router_isozone_3_switch_1 $ISOZONE_SWITCH_NAME_3\n  -esg_go_router_isozone_3_inst_1
+          $ESG_GO_ROUTER_ISOZONE_3_INST_1\n  -esg_tcp_router_isozone_3_uplink_ip_1
+          $ESG_TCP_ROUTER_ISOZONE_3_UPLINK_IP_1\n  -esg_tcp_router_isozone_3_switch_1
+          $ISOZONE_SWITCH_NAME_3\n  -esg_tcp_router_isozone_3_inst_1 $ESG_TCP_ROUTER_ISOZONE_3_INST_1\n
+          \ \"\n\n  if [ \"$ESG_ISO_CERTS_CONFIG_DOMAINS_3_1\" != \"\" ]; then\n    ARGS=\"$ARGS
+          \n    -esg_iso_certs_3_1 $ESG_ISO_CERTS_NAME_3_1\n    -esg_iso_certs_config_switch_3_1
+          $ESG_ISO_CERTS_SWITCH_3_1\n    -esg_iso_certs_config_ou_3_1 $ESG_ISO_CERTS_CONFIG_OU_3_1\n
+          \   -esg_iso_certs_config_cc_3_1 $ESG_ISO_CERTS_CONFIG_COUNTRY_3_1\n    -esg_iso_certs_config_domains_3_1
+          $ESG_ISO_CERTS_CONFIG_DOMAINS_3_1\n     \"\n  fi\nfi\n\n./nsx-gen/bin/nsxgen
+          \\\n-c $NSX_EDGE_GEN_NAME \\\n-esg_name_1 $NSX_EDGE_GEN_NAME \\\n-esg_ospf_password_1
+          $ESG_OSPF_PASSWORD_1  \\\n-esg_cli_user_1 $ESG_CLI_USERNAME_1   \\\n-esg_cli_pass_1
+          $ESG_CLI_PASSWORD_1   \\\n-esg_ert_certs_1 $ESG_ERT_CERTS_NAME_1   \\\n-esg_ert_certs_config_sysd_1
+          $ESG_ERT_CERTS_CONFIG_SYSTEMDOMAIN_1   \\\n-esg_ert_certs_config_appd_1
+          $ESG_ERT_CERTS_CONFIG_APPDOMAIN_1   \\\n-esg_opsmgr_uplink_ip_1 $ESG_OPSMGR_UPLINK_IP_1
+          \  \\\n-esg_go_router_uplink_ip_1 $ESG_GO_ROUTER_UPLINK_IP_1   \\\n-esg_diego_brain_uplink_ip_1
+          $ESG_DIEGO_BRAIN_UPLINK_IP_1   \\\n-esg_tcp_router_uplink_ip_1 $ESG_TCP_ROUTER_UPLINK_IP_1
+          \  \\\n-esg_go_router_inst_1 $ESG_GO_ROUTER_INSTANCES_1 \\\n-esg_diego_brain_inst_1
+          $ESG_DIEGO_BRAIN_INSTANCES_1 \\\n-esg_tcp_router_inst_1 $ESG_TCP_ROUTER_INSTANCES_1
+          \\\n-esg_mysql_ert_inst_1 $ESG_MYSQL_ERT_PROXY_INSTANCES_1 \\\n-esg_mysql_tile_inst_1
+          $ESG_MYSQL_TILE_PROXY_INSTANCES_1  \\\n-esg_rabbitmq_tile_inst_1 $ESG_RABBITMQ_TILE_PROXY_INSTANCES_1
+          \\\n-esg_gateway_1 $ESG_GATEWAY_1 \\\n-vcenter_addr $VCENTER_HOST   \\\n-vcenter_user
+          $VCENTER_USR   \\\n-vcenter_pass $VCENTER_PWD   \\\n-vcenter_dc $VCENTER_DATA_CENTER
+          \  \\\n-vcenter_ds $NSX_EDGE_GEN_EDGE_DATASTORE   \\\n-vcenter_cluster $NSX_EDGE_GEN_EDGE_CLUSTER
+          \ \\\n-nsxmanager_addr $NSX_EDGE_GEN_NSX_MANAGER_ADDRESS   \\\n-nsxmanager_user
+          $NSX_EDGE_GEN_NSX_MANAGER_ADMIN_USER   \\\n-nsxmanager_pass $NSX_EDGE_GEN_NSX_MANAGER_ADMIN_PASSWD
+          \  \\\n-nsxmanager_tz \"$NSX_EDGE_GEN_NSX_MANAGER_TRANSPORT_ZONE\"   \\\n-nsxmanager_tz_clusters
+          \"$NSX_EDGE_GEN_NSX_MANAGER_TRANSPORT_ZONE_CLUSTERS\" \\\n-nsxmanager_dportgroup
+          \"$NSX_EDGE_GEN_NSX_MANAGER_DISTRIBUTED_PORTGROUP\" \\\n-nsxmanager_uplink_ip
+          $ESG_DEFAULT_UPLINK_IP_1  \\\n-nsxmanager_uplink_port \"$ESG_DEFAULT_UPLINK_PG_1\"
+          \\\n-nsxmanager_en_dlr $NSX_EDGE_GEN_ENABLE_DLR \\\n-nsxmanager_bosh_nsx_enabled
+          $NSX_EDGE_GEN_BOSH_NSX_ENABLED \\\n$ARGS \\\nlist | tee $NSX_GEN_OUTPUT
+          2>&1 \n\npopd  >/dev/null 2>&1\n\ncp ${NSX_GEN_UTIL} ${NSX_GEN_OUTPUT_DIR}/\n\n\nEO_SH\n\nchmod
+          +x task.sh\n./task.sh\n"
+        dir: ""
+      inputs:
+      - name: nsx-edge-gen
+        path: ""
+      outputs:
+      - name: nsx-gen-output
+        path: ""
+    params:
+      ESG_CLI_PASSWORD_1: {{esg_cli_password_1}}
+      ESG_CLI_USERNAME_1: {{esg_cli_username_1}}
+      ESG_DEFAULT_UPLINK_IP_1: {{esg_default_uplink_ip_1}}
+      ESG_DEFAULT_UPLINK_PG_1: {{esg_default_uplink_pg_1}}
+      ESG_DIEGO_BRAIN_INSTANCES_1: {{diego_brain_instances}}
+      ESG_DIEGO_BRAIN_UPLINK_IP_1: {{esg_diego_brain_uplink_ip_1}}
+      ESG_ERT_CERTS_CONFIG_APPDOMAIN_1: {{apps_domain}}
+      ESG_ERT_CERTS_CONFIG_COUNTRY: {{ert_certs_country}}
+      ESG_ERT_CERTS_CONFIG_OU: {{ert_certs_ou}}
+      ESG_ERT_CERTS_CONFIG_SYSTEMDOMAIN_1: {{system_domain}}
+      ESG_ERT_CERTS_NAME_1: {{ert_certs_name_1}}
+      ESG_GATEWAY_1: {{esg_gateway_1}}
+      ESG_GO_ROUTER_INSTANCES_1: {{router_instances}}
+      ESG_GO_ROUTER_ISOZONE_1_INST_1: {{esg_go_router_isozone_1_inst_1}}
+      ESG_GO_ROUTER_ISOZONE_1_SWITCH_1: {{isozone_switch_name_1}}
+      ESG_GO_ROUTER_ISOZONE_1_UPLINK_IP_1: {{esg_go_router_isozone_1_uplink_ip_1}}
+      ESG_GO_ROUTER_UPLINK_IP_1: {{esg_go_router_uplink_ip_1}}
+      ESG_MYSQL_ERT_PROXY_INSTANCES_1: {{mysql_proxy_instances}}
+      ESG_MYSQL_TILE_PROXY_INSTANCES_1: {{tile_mysql_proxy_instances}}
+      ESG_OPSMGR_UPLINK_IP_1: {{esg_opsmgr_uplink_ip_1}}
+      ESG_OSPF_PASSWORD_1: {{esg_ospf_password_1}}
+      ESG_RABBITMQ_TILE_PROXY_INSTANCES_1: {{tile_rabbit_proxy_instances}}
+      ESG_SIZE: {{esg_size}}
+      ESG_TCP_ROUTER_INSTANCES_1: {{tcp_router_instances}}
+      ESG_TCP_ROUTER_ISOZONE_1_INST_1: {{esg_tcp_router_isozone_1_inst_1}}
+      ESG_TCP_ROUTER_ISOZONE_1_SWITCH_1: {{isozone_switch_name_1}}
+      ESG_TCP_ROUTER_ISOZONE_1_UPLINK_IP_1: {{esg_tcp_router_isozone_1_uplink_ip_1}}
+      ESG_TCP_ROUTER_UPLINK_IP_1: {{esg_tcp_router_uplink_ip_1}}
+      NSX_EDGE_GEN_BOSH_NSX_ENABLED: {{nsx_edge_gen_bosh_nsx_enabled}}
+      NSX_EDGE_GEN_EDGE_CLUSTER: {{nsx_edge_gen_egde_cluster}}
+      NSX_EDGE_GEN_EDGE_DATASTORE: {{nsx_edge_gen_egde_datastore}}
+      NSX_EDGE_GEN_ENABLE_DLR: {{nsx_edge_gen_enable_dlr}}
+      NSX_EDGE_GEN_NAME: {{nsx_edge_gen_name}}
+      NSX_EDGE_GEN_NSX_MANAGER_ADDRESS: {{nsx_edge_gen_nsx_manager_address}}
+      NSX_EDGE_GEN_NSX_MANAGER_ADMIN_PASSWD: {{nsx_edge_gen_nsx_manager_admin_passwd}}
+      NSX_EDGE_GEN_NSX_MANAGER_ADMIN_USER: {{nsx_edge_gen_nsx_manager_admin_user}}
+      NSX_EDGE_GEN_NSX_MANAGER_DISTRIBUTED_PORTGROUP: {{nsx_edge_gen_nsx_manager_distributed_portgroup}}
+      NSX_EDGE_GEN_NSX_MANAGER_TRANSPORT_ZONE: {{nsx_edge_gen_nsx_manager_transport_zone}}
+      VCENTER_DATA_CENTER: {{vcenter_data_center}}
+      VCENTER_HOST: {{vcenter_host}}
+      VCENTER_PWD: {{vcenter_pwd}}
+      VCENTER_USR: {{vcenter_usr}}
+- name: nsx-edge-destroy
+  plan:
+  - aggregate:
+    - get: nsx-edge-gen
+      params:
+        unpack: true
+  - task: nsx-edge-destroy
+    config:
+      platform: linux
+      image_resource:
+        type: s3
+        source:
+          access_key_id: {{s3_access_key_id}}
+          bucket: {{s3_bucket}}
+          endpoint: {{s3_endpoint}}
+          regexp: nsx-edge-gen-image/nsx-edge-gen-(.*).tar
+          region_name: {{s3_region}}
+          secret_access_key: {{s3_secret_access_key}}
+        params:
+          unpack: true
+      params:
+        ESG_CLI_PASSWORD_1: ""
+        ESG_CLI_USERNAME_1: ""
+        ESG_DEFAULT_UPLINK_IP_1: ""
+        ESG_DEFAULT_UPLINK_PG_1: ""
+        ESG_DIEGO_BRAIN_UPLINK_IP_1: ""
+        ESG_ERT_CERTS_CONFIG_APPDOMAIN_1: ""
+        ESG_ERT_CERTS_CONFIG_COUNTRY_1: ""
+        ESG_ERT_CERTS_CONFIG_OU_1: ""
+        ESG_ERT_CERTS_CONFIG_SYSTEMDOMAIN_1: ""
+        ESG_ERT_CERTS_NAME_1: ""
+        ESG_GATEWAY_1: ""
+        ESG_GO_ROUTER_UPLINK_IP_1: ""
+        ESG_ISO_CERTS_CONFIG_COUNTRY_1_1: ""
+        ESG_ISO_CERTS_CONFIG_DOMAIN_1_1: ""
+        ESG_ISO_CERTS_CONFIG_OU_1_1: ""
+        ESG_ISO_CERTS_NAME_1_1: ""
+        ESG_ISO_CERTS_SWITCH_1_1: ""
+        ESG_OPSMGR_UPLINK_IP_1: ""
+        ESG_OSPF_PASSWORD_1: ""
+        ESG_SIZE: ""
+        ESG_TCP_ROUTER_UPLINK_IP_1: ""
+        NSX_EDGE_GEN_BOSH_NSX_ENABLED: ""
+        NSX_EDGE_GEN_EDGE_CLUSTER: ""
+        NSX_EDGE_GEN_EDGE_DATASTORE: ""
+        NSX_EDGE_GEN_ENABLE_DLR: ""
+        NSX_EDGE_GEN_NAME: ""
+        NSX_EDGE_GEN_NSX_MANAGER_ADDRESS: ""
+        NSX_EDGE_GEN_NSX_MANAGER_ADMIN_PASSWD: ""
+        NSX_EDGE_GEN_NSX_MANAGER_ADMIN_USER: ""
+        NSX_EDGE_GEN_NSX_MANAGER_DISTRIBUTED_PORTGROUP: ""
+        NSX_EDGE_GEN_NSX_MANAGER_TRANSPORT_ZONE: ""
+        NSX_EDGE_GEN_NSX_MANAGER_TRANSPORT_ZONE_CLUSTERS: ""
+        VCENTER_DATA_CENTER: ""
+        VCENTER_HOST: ""
+        VCENTER_PWD: ""
+        VCENTER_USR: ""
+      run:
+        path: sh
+        args:
+        - -c
+        - "cat > task.sh <<'EO_SH'\n#!/bin/bash\nset -ex\n\n\npushd nsx-edge-gen\n\n#
+          Remove any existing config file template from the repo\nif [[ -e nsx_cloud_config.yml
+          ]]; then rm -rf nsx_cloud_config.yml; fi\n\n# Init new config file template\n./nsx-gen/bin/nsxgen
+          -i $NSX_EDGE_GEN_NAME init\nARGS=\" \"\n\nif [ \"$ISOZONE_SWITCH_NAME_1\"
+          != \"\" ]; then\n  ARGS=\"$ARGS \n  -isozone_switch_name_1 $ISOZONE_SWITCH_NAME_1\n
+          \ -isozone_switch_cidr_1 $ISOZONE_SWITCH_CIDR_1\n  -esg_go_router_isozone_1_uplink_ip_1
+          $ESG_GO_ROUTER_ISOZONE_1_UPLINK_IP_1\n  -esg_go_router_isozone_1_switch_1
+          $ISOZONE_SWITCH_NAME_1\n  -esg_go_router_isozone_1_inst_1 $ESG_GO_ROUTER_ISOZONE_1_INST_1\n
+          \ -esg_tcp_router_isozone_1_uplink_ip_1 $ESG_TCP_ROUTER_ISOZONE_1_UPLINK_IP_1\n
+          \ -esg_tcp_router_isozone_1_switch_1 $ISOZONE_SWITCH_NAME_1\n  -esg_tcp_router_isozone_1_inst_1
+          $ESG_TCP_ROUTER_ISOZONE_1_INST_1\n   \"\n\n  if [ \"$ESG_ISO_CERTS_CONFIG_DOMAINS_1_1\"
+          != \"\" ]; then\n    ARGS=\"$ARGS \n    -esg_iso_certs_1_1 $ESG_ISO_CERTS_NAME_1_1\n
+          \   -esg_iso_certs_config_switch_1_1 $ESG_ISO_CERTS_SWITCH_1_1\n    -esg_iso_certs_config_ou_1_1
+          $ESG_ISO_CERTS_CONFIG_OU_1_1\n    -esg_iso_certs_config_cc_1_1 $ESG_ISO_CERTS_CONFIG_COUNTRY_1_1\n
+          \   -esg_iso_certs_config_domains_1_1 $ESG_ISO_CERTS_CONFIG_DOMAINS_1_1\n
+          \    \"\n  fi\nfi\n\nif [ \"$ISOZONE_SWITCH_NAME_2\" != \"\" ]; then\n  ARGS=\"$ARGS
+          \n  -isozone_switch_name_2 $ISOZONE_SWITCH_NAME_2\n  -isozone_switch_cidr_2
+          $ISOZONE_SWITCH_CIDR_2\n  -esg_go_router_isozone_2_uplink_ip_1 $ESG_GO_ROUTER_ISOZONE_2_UPLINK_IP_1\n
+          \ -esg_go_router_isozone_2_switch_1 $ISOZONE_SWITCH_NAME_2\n  -esg_go_router_isozone_2_inst_1
+          $ESG_GO_ROUTER_ISOZONE_2_INST_1\n  -esg_tcp_router_isozone_2_uplink_ip_1
+          $ESG_TCP_ROUTER_ISOZONE_2_UPLINK_IP_1\n  -esg_tcp_router_isozone_2_switch_1
+          $ISOZONE_SWITCH_NAME_2\n  -esg_tcp_router_isozone_2_inst_1 $ESG_TCP_ROUTER_ISOZONE_2_INST_1\n
+          \ \"\n\n  if [ \"$ESG_ISO_CERTS_CONFIG_DOMAINS_2_1\" != \"\" ]; then\n    ARGS=\"$ARGS
+          \n    -esg_iso_certs_2_1 $ESG_ISO_CERTS_NAME_2_1\n    -esg_iso_certs_config_switch_2_1
+          $ESG_ISO_CERTS_SWITCH_2_1\n    -esg_iso_certs_config_ou_2_1 $ESG_ISO_CERTS_CONFIG_OU_2_1\n
+          \   -esg_iso_certs_config_cc_2_1 $ESG_ISO_CERTS_CONFIG_COUNTRY_2_1\n    -esg_iso_certs_config_domains_2_1
+          $ESG_ISO_CERTS_CONFIG_DOMAINS_2_1\n     \"\n  fi\nfi\n\nif [ \"$ISOZONE_SWITCH_NAME_3\"
+          != \"\" ]; then\n  ARGS=\"$ARGS \n  -isozone_switch_name_3 $ISOZONE_SWITCH_NAME_3\n
+          \ -isozone_switch_cidr_3 $ISOZONE_SWITCH_CIDR_3\n  -esg_go_router_isozone_3_uplink_ip_1
+          $ESG_GO_ROUTER_ISOZONE_3_UPLINK_IP_1\n  -esg_go_router_isozone_3_switch_1
+          $ISOZONE_SWITCH_NAME_3\n  -esg_go_router_isozone_3_inst_1 $ESG_GO_ROUTER_ISOZONE_3_INST_1\n
+          \ -esg_tcp_router_isozone_3_uplink_ip_1 $ESG_TCP_ROUTER_ISOZONE_3_UPLINK_IP_1\n
+          \ -esg_tcp_router_isozone_3_switch_1 $ISOZONE_SWITCH_NAME_3\n  -esg_tcp_router_isozone_3_inst_1
+          $ESG_TCP_ROUTER_ISOZONE_3_INST_1\n  \"\n\n  if [ \"$ESG_ISO_CERTS_CONFIG_DOMAINS_3_1\"
+          != \"\" ]; then\n    ARGS=\"$ARGS \n    -esg_iso_certs_3_1 $ESG_ISO_CERTS_NAME_3_1\n
+          \   -esg_iso_certs_config_switch_3_1 $ESG_ISO_CERTS_SWITCH_3_1\n    -esg_iso_certs_config_ou_3_1
+          $ESG_ISO_CERTS_CONFIG_OU_3_1\n    -esg_iso_certs_config_cc_3_1 $ESG_ISO_CERTS_CONFIG_COUNTRY_3_1\n
+          \   -esg_iso_certs_config_domains_3_1 $ESG_ISO_CERTS_CONFIG_DOMAINS_3_1\n
+          \    \"\n  fi\nfi\n\n./nsx-gen/bin/nsxgen \\\n-c $NSX_EDGE_GEN_NAME \\\n-esg_name_1
+          $NSX_EDGE_GEN_NAME \\\n-esg_size_1 $ESG_SIZE  \\\n-esg_ospf_password_1 $ESG_OSPF_PASSWORD_1
+          \ \\\n-esg_cli_user_1 $ESG_CLI_USERNAME_1   \\\n-esg_cli_pass_1 $ESG_CLI_PASSWORD_1
+          \  \\\n-esg_ert_certs_1 $ESG_ERT_CERTS_NAME_1   \\\n-esg_ert_certs_config_sysd_1
+          $ESG_ERT_CERTS_CONFIG_SYSTEMDOMAIN_1   \\\n-esg_ert_certs_config_appd_1
+          $ESG_ERT_CERTS_CONFIG_APPDOMAIN_1   \\\n-esg_opsmgr_uplink_ip_1 $ESG_OPSMGR_UPLINK_IP_1
+          \  \\\n-esg_go_router_uplink_ip_1 $ESG_GO_ROUTER_UPLINK_IP_1   \\\n-esg_diego_brain_uplink_ip_1
+          $ESG_DIEGO_BRAIN_UPLINK_IP_1   \\\n-esg_tcp_router_uplink_ip_1 $ESG_TCP_ROUTER_UPLINK_IP_1
+          \  \\\n-esg_go_router_inst_1 $ESG_GO_ROUTER_INSTANCES_1 \\\n-esg_diego_brain_inst_1
+          $ESG_DIEGO_BRAIN_INSTANCES_1 \\\n-esg_tcp_router_inst_1 $ESG_TCP_ROUTER_INSTANCES_1
+          \\\n-esg_mysql_ert_inst_1 $ESG_MYSQL_ERT_PROXY_INSTANCES_1 \\\n-esg_mysql_tile_inst_1
+          $ESG_MYSQL_TILE_PROXY_INSTANCES_1  \\\n-esg_rabbitmq_tile_inst_1 $ESG_RABBITMQ_TILE_PROXY_INSTANCES_1
+          \\\n-esg_gateway_1 $ESG_GATEWAY_1 \\\n-vcenter_addr $VCENTER_HOST   \\\n-vcenter_user
+          $VCENTER_USR   \\\n-vcenter_pass $VCENTER_PWD   \\\n-vcenter_dc $VCENTER_DATA_CENTER
+          \  \\\n-vcenter_ds $NSX_EDGE_GEN_EDGE_DATASTORE   \\\n-vcenter_cluster $NSX_EDGE_GEN_EDGE_CLUSTER
+          \ \\\n-nsxmanager_addr $NSX_EDGE_GEN_NSX_MANAGER_ADDRESS   \\\n-nsxmanager_user
+          $NSX_EDGE_GEN_NSX_MANAGER_ADMIN_USER   \\\n-nsxmanager_pass $NSX_EDGE_GEN_NSX_MANAGER_ADMIN_PASSWD
+          \  \\\n-nsxmanager_tz \"$NSX_EDGE_GEN_NSX_MANAGER_TRANSPORT_ZONE\"   \\\n-nsxmanager_tz_clusters
+          \"$NSX_EDGE_GEN_NSX_MANAGER_TRANSPORT_ZONE_CLUSTERS\" \\\n-nsxmanager_dportgroup
+          \"$NSX_EDGE_GEN_NSX_MANAGER_DISTRIBUTED_PORTGROUP\" \\\n-nsxmanager_uplink_ip
+          $ESG_DEFAULT_UPLINK_IP_1  \\\n-nsxmanager_uplink_port \"$ESG_DEFAULT_UPLINK_PG_1\"
+          \\\n-nsxmanager_en_dlr $NSX_EDGE_GEN_ENABLE_DLR \\\n-nsxmanager_bosh_nsx_enabled
+          $NSX_EDGE_GEN_BOSH_NSX_ENABLED \\\n$ARGS \\\ndelete\n\nSTATUS=$?\npopd  >/dev/null
+          2>&1\n\nexit $STATUS\n\nEO_SH\n\nchmod +x task.sh\n./task.sh\n"
+        dir: ""
+      inputs:
+      - name: nsx-edge-gen
+        path: ""
+    params:
+      ESG_CLI_PASSWORD_1: {{esg_cli_password_1}}
+      ESG_CLI_USERNAME_1: {{esg_cli_username_1}}
+      ESG_DEFAULT_UPLINK_IP_1: {{esg_default_uplink_ip_1}}
+      ESG_DEFAULT_UPLINK_PG_1: {{esg_default_uplink_pg_1}}
+      ESG_DIEGO_BRAIN_INSTANCES_1: {{diego_brain_instances}}
+      ESG_DIEGO_BRAIN_UPLINK_IP_1: {{esg_diego_brain_uplink_ip_1}}
+      ESG_ERT_CERTS_CONFIG_APPDOMAIN_1: {{apps_domain}}
+      ESG_ERT_CERTS_CONFIG_COUNTRY: {{ert_certs_country}}
+      ESG_ERT_CERTS_CONFIG_OU: {{ert_certs_ou}}
+      ESG_ERT_CERTS_CONFIG_SYSTEMDOMAIN_1: {{system_domain}}
+      ESG_ERT_CERTS_NAME_1: {{ert_certs_name_1}}
+      ESG_GATEWAY_1: {{esg_gateway_1}}
+      ESG_GO_ROUTER_INSTANCES_1: {{router_instances}}
+      ESG_GO_ROUTER_ISOZONE_1_INST_1: {{esg_go_router_isozone_1_inst_1}}
+      ESG_GO_ROUTER_ISOZONE_1_SWITCH_1: {{isozone_switch_name_1}}
+      ESG_GO_ROUTER_ISOZONE_1_UPLINK_IP_1: {{esg_go_router_isozone_1_uplink_ip_1}}
+      ESG_GO_ROUTER_UPLINK_IP_1: {{esg_go_router_uplink_ip_1}}
+      ESG_MYSQL_ERT_PROXY_INSTANCES_1: {{mysql_proxy_instances}}
+      ESG_MYSQL_TILE_PROXY_INSTANCES_1: {{tile_mysql_proxy_instances}}
+      ESG_OPSMGR_UPLINK_IP_1: {{esg_opsmgr_uplink_ip_1}}
+      ESG_OSPF_PASSWORD_1: {{esg_ospf_password_1}}
+      ESG_RABBITMQ_TILE_PROXY_INSTANCES_1: {{tile_rabbit_proxy_instances}}
+      ESG_SIZE: {{esg_size}}
+      ESG_TCP_ROUTER_INSTANCES_1: {{tcp_router_instances}}
+      ESG_TCP_ROUTER_ISOZONE_1_INST_1: {{esg_tcp_router_isozone_1_inst_1}}
+      ESG_TCP_ROUTER_ISOZONE_1_SWITCH_1: {{isozone_switch_name_1}}
+      ESG_TCP_ROUTER_ISOZONE_1_UPLINK_IP_1: {{esg_tcp_router_isozone_1_uplink_ip_1}}
+      ESG_TCP_ROUTER_UPLINK_IP_1: {{esg_tcp_router_uplink_ip_1}}
+      NSX_EDGE_GEN_BOSH_NSX_ENABLED: {{nsx_edge_gen_bosh_nsx_enabled}}
+      NSX_EDGE_GEN_EDGE_CLUSTER: {{nsx_edge_gen_egde_cluster}}
+      NSX_EDGE_GEN_EDGE_DATASTORE: {{nsx_edge_gen_egde_datastore}}
+      NSX_EDGE_GEN_ENABLE_DLR: {{nsx_edge_gen_enable_dlr}}
+      NSX_EDGE_GEN_NAME: {{nsx_edge_gen_name}}
+      NSX_EDGE_GEN_NSX_MANAGER_ADDRESS: {{nsx_edge_gen_nsx_manager_address}}
+      NSX_EDGE_GEN_NSX_MANAGER_ADMIN_PASSWD: {{nsx_edge_gen_nsx_manager_admin_passwd}}
+      NSX_EDGE_GEN_NSX_MANAGER_ADMIN_USER: {{nsx_edge_gen_nsx_manager_admin_user}}
+      NSX_EDGE_GEN_NSX_MANAGER_DISTRIBUTED_PORTGROUP: {{nsx_edge_gen_nsx_manager_distributed_portgroup}}
+      NSX_EDGE_GEN_NSX_MANAGER_TRANSPORT_ZONE: {{nsx_edge_gen_nsx_manager_transport_zone}}
+      VCENTER_DATA_CENTER: {{vcenter_data_center}}
+      VCENTER_HOST: {{vcenter_host}}
+      VCENTER_PWD: {{vcenter_pwd}}
+      VCENTER_USR: {{vcenter_usr}}

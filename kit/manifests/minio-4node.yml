@@ -1,0 +1,44 @@
+---
+name: minio
+
+releases:
+- name: minio
+  version: latest
+
+stemcells:
+- alias: trusty
+  os: ubuntu-trusty
+  version: latest
+
+instance_groups:
+- name: minio-server
+  instances: 4
+  # replace with a VM type from your BOSH Director's cloud config
+  vm_type: default
+  stemcell: trusty
+  # replace with a disk type from your BOSH Director's cloud config
+  persistent_disk_type: large
+  azs: [az1]
+  networks:
+  - name: default
+    static_ips:
+    - 10.10.100.110
+    - 10.10.100.111
+    - 10.10.100.112
+    - 10.10.100.113
+  jobs:
+  - name: minio-server
+    release: minio
+    properties:
+      credential:
+        accesskey: minio
+        secretkey: KeepItSimple123!
+      region: us-east-1
+      port: 9001
+
+update:
+  canaries: 1
+  max_in_flight: 4
+  serial: false
+  canary_watch_time: 1000-60000
+  update_watch_time: 1000-60000

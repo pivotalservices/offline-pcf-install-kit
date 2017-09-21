@@ -1,0 +1,21 @@
+bosh create-env bosh-deployment/bosh.yml \
+    --state=state.json \
+    --vars-store=creds.yml \
+    -o bosh-deployment/vsphere/cpi.yml \
+    -o bosh-deployment/jumpbox-user.yml \
+    -o bosh-deployment/misc/dns.yml \
+    -v director_name=bosh-standalone \
+    -v internal_cidr=10.10.100.0/24 \
+    -v internal_gw=10.10.100.1 \
+    -v internal_dns="[10.10.100.201]" \
+    -v internal_ip=10.10.100.100 \
+    -v network_name="vCenter Server Network-a924fb57-b9b4-45d2-8591-224a947ffacf" \
+    -v vcenter_dc="MARVIN-Datacenter" \
+    -v vcenter_ds="MARVIN-Virtual-SAN-Datastore-a924fb57-b9b4-45d2-8591-224a947ffacf" \
+    -v vcenter_ip=10.10.100.201 \
+    -v vcenter_user=administrator@vsphere.local \
+    -v vcenter_password=KeepItSimple123! \
+    -v vcenter_templates=bosh-standalone-templates \
+    -v vcenter_vms=bosh-standalone-vms \
+    -v vcenter_disks=bosh-standalone-disks \
+    -v vcenter_cluster="MARVIN-Virtual-SAN-Cluster-a924fb57-b9b4-45d2-8591-224a947ffacf"

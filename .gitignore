@@ -20,3 +20,6 @@ pivnet-cli/
 .minio.sys
 kit/products/
 kit/stemcells/
+kit/tools/
+kit/bosh-standalone/
+kit/s3-starter

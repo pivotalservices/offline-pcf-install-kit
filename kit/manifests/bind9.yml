@@ -1,0 +1,82 @@
+---
+name: bind9
+
+releases:
+- name: bind9
+  version: latest
+
+stemcells:
+- alias: trusty
+  os: ubuntu-trusty
+  version: latest
+
+instance_groups:
+- name: bind-master
+  instances: 1
+  # replace with a VM type from your BOSH Director's cloud config
+  vm_type: default
+  stemcell: trusty
+  # replace with a disk type from your BOSH Director's cloud config
+  azs: [az1]
+  networks:
+  - name: default
+    static_ips:
+    - 10.10.100.102
+  jobs:
+  - name: master
+    release: bind9
+    properties:
+      bind9:
+        master:
+          slaves:
+          - 10.10.100.102
+          allow_transfer: any
+          zones:
+            vxrail.local: |+
+              $TTL 10m
+              $ORIGIN vxrail.local.
+              @ IN SOA vxrail.local. hostmaster.vxrail.local. (
+                         2015082508  ; serial
+                         15m         ; slaves should check back with us every 15min
+                         20          ; slaves should retry (on failure) after 20sec
+                         4h          ; slaves stop being authoritative after 4hr without updates
+                         1h          ; other NSes should cache our results for 1h
+                       )
+                     IN NS ns1.vxrail.local.
+              ns1    IN A  10.10.100.102
+              esxi-01    IN A  10.10.100.210
+              esxi-02    IN A  10.10.100.211
+              esxi-03    IN A  10.10.100.212
+              esxi-04    IN A  10.10.100.213
+              $ORIGIN apps.vxrail.local.
+              *              IN      A       10.10.100.227
+              $ORIGIN sys.vxrail.local.
+              *              IN      A       10.10.100.227
+            10.in-addr.arpa: |+
+              $TTL 1h
+              $ORIGIN 10.in-addr.arpa.
+              @ IN SOA vxrail.local. hostmaster.vxrail.local. (
+                         2015082508  ; serial
+                         15m         ; slaves should check back with us every 15min
+                         20          ; slaves should retry (on failure) after 20sec
+                         4h          ; slaves stop being authoritative after 4hr without updates
+                         1h          ; other NSes should cache our results for 1h
+                       )
+                      IN NS  ns1.vxrail.local.
+              102.100.10  IN PTR ns1.vxrail.local.
+              210.100.10  IN PTR esxi-01.vxrail.local.
+              211.100.10  IN PTR esxi-02.vxrail.local.
+              212.100.10  IN PTR esxi-03.vxrail.local.
+              213.100.10  IN PTR esxi-04.vxrail.local.
+        recursion:
+          forwarders:
+          - 10.10.100.201
+          allow_from:
+          - any
+
+update:
+  canaries: 1
+  max_in_flight: 4
+  serial: false
+  canary_watch_time: 1000-60000
+  update_watch_time: 1000-60000

@@ -1,0 +1,53 @@
+azs:
+- name: az1
+  cloud_properties:
+    datacenters:
+    - clusters: [MARVIN-Virtual-SAN-Cluster-a924fb57-b9b4-45d2-8591-224a947ffacf: {}]
+
+vm_types:
+- name: default
+  cloud_properties:
+    cpu: 2
+    ram: 1024
+    disk: 3240
+- name: large
+  cloud_properties:
+    cpu: 2
+    ram: 4096
+    disk: 100_000
+
+disk_types:
+- name: default
+  disk_size: 3000
+- name: large
+  disk_size: 50_000
+
+networks:
+- name: default
+  type: manual
+  subnets:
+  - range: 10.10.100.0/24
+    gateway: 10.10.100.1
+    azs: [az1]
+    static:
+    - 10.10.100.101-10.10.100.120
+    dns:
+    - 10.10.100.201
+    reserved:
+    - 10.10.100.0-10.10.100.100
+    # BEGIN DHCP already used addresses
+    - 10.10.100.153
+    - 10.10.100.160
+    - 10.10.100.169
+    - 10.10.100.177
+    # END DHCP already used addresses
+    - 10.10.100.200-10.10.100.255
+    cloud_properties:
+      name: vCenter Server Network-a924fb57-b9b4-45d2-8591-224a947ffacf
+
+compilation:
+  workers: 5
+  reuse_compilation_vms: true
+  az: az1
+  vm_type: default
+  network: default

@@ -1,0 +1,45 @@
+s3_access_key_id: 
+s3_secret_access_key:
+s3_endpoint: s3-us-west-2.amazonaws.com
+s3_bucket: mcampbell-darknet-artifacts
+s3_region: us-west-2
+dockerhub_username: 
+dockerhub_password:
+iaas_type: aws
+atc_external_url: http://ec2-35-162-231-120.us-west-2.compute.amazonaws.com:8080
+
+operations_manager_regex: ^1\.11\..*$
+elastic_runtime_regex: ^1\.11\..*$
+gpg_public_key_contents: |
+  -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+  mQENBFmeFJ0BCADYTxTyPujyyAY+Hv/rm+Dgz76hIge1/xOf+rpjldS1eOf1weps
+  jO4+fdgg3bPZMo6jTr6wF6gp1fUSgXRd45K6Mrif2Kjqn9GiKDxw4q6Ps/wnbOFC
+  pBV5OM2mMX7b8mpJIiSh38hXLrujkEBnatrjsnjLd0N5ctWj0LBFTDo0UwX7Tk/G
+  aB/o9ZhTaJDmoW45xmzsz9/2BUvgFBOwGl4b79GSJQKXPCdsYT/GYWDEfgpmOWMj
+  lO/idVMEIZVqdVd2teZBDMpveVBHe/J+jw0V+obnsLOoZcbPQa29CYFiO7Jq9feO
+  Ip2/Gnjl0bNCnIdWbG5pTf3HZINive2k24eZABEBAAG0HFBpdm90YWwgPGtzdHJp
+  bmlAcGl2b3RhbC5pbz6JAVQEEwEIAD4WIQR4U48Cb84l4ZuwVhJIvoqSDG22vgUC
+  WZ4UnQIbAwUJA8JnAAULCQgHAgYVCAkKCwIEFgIDAQIeAQIXgAAKCRBIvoqSDG22
+  vjh3B/0bdMq8dHgYQ+GOITtmq5XK5eyuCAEtiKt/ECyR4IkGtNuu5q2EUtElA1fs
+  wGCNpjsa1lxQJURagMESYuVLDT4Ux6m4vr8hkrTVoUUajJQc8jvvfgEArHM4fkk/
+  a0g117LQ1J+BRYCjKThnW8ziCCyf2LX25fotXgPaekIvB/L7nBDatvdT0QIr3VUl
+  Gk532zzw5sPLkxRynEI20zg4vrMtFetiWxogkBnJlwNkEt2C02NiOxxzZOIyfJh4
+  VB11WOZWmGsPRL9f2A2iFLugjFOFifFJXUGdCoGP5IIGTdNtEexz9VgFYBqEfc2U
+  gM1PvIkfcQDEEZruKAu9IoHJ4MU+uQENBFmeFJ0BCADaKjXokN8a5J/tGr5kLOwE
+  nVza4QfPPDWY8Q+SVNXFX9k0JvJIoaBLFqtsKT9nzG/v0z+FgKhTWO/AzsOjNr5Q
+  rR/CJykjwuYL/eXQQxZbM1Y13YCbFWPkbvzL2DKfWjxEGh/ILDl7s29aFFiV7+Vv
+  bhWWGaepfOFaYLTfQ2RUuN40KdVNxtwnKdZQ6i3bP2rONAag2Om3DA4yNeBylBbK
+  mK/OCipVBYoni7Vjqz0ZSUmMhgbZISutuMkzkZVvZI1e8FLFagct9b4lfCnNy0Mk
+  ZlFikUt4HuWjDIjtgQmRZTn0HnRt+SPWJZupX5T+bN5eQRwn/ysMxjbyH92RKtJ1
+  ABEBAAGJATwEGAEIACYWIQR4U48Cb84l4ZuwVhJIvoqSDG22vgUCWZ4UnQIbDAUJ
+  A8JnAAAKCRBIvoqSDG22vgESCACwjgoyZ55ZoaD67P/TM+/s7dh/CbJDw15CjDhT
+  HFzITmoCuRf/v4bC2LlzkCqkz+D2JfpPxdE5f2ccQNXN5wDj7VF3nqEunIuv/EXs
+  H4v1r9LD5iSUa4aR8bcWm2Iwt95y+5NbNFFEsLFEnKJaqycxbEO9ycjr9V2Q113j
+  d26kcPkqy96vUgsuMivL5CrVirUl4CXOqd75ZhfjHw3ait7hjn7t+eoCyfZ57t09
+  6rqXFZ5Qg9044V05S7EadVLV26AR/VRIeyZTDlP956GrCT4/EhYCIylG+XbG0cgC
+  byzVk+Fgig8z6dRFMfGim1hL0jmF5p05/WXKaJZi1EVPhaoW
+  =WYSD
+  -----END PGP PUBLIC KEY BLOCK-----
+
+gpg_public_key_email: kstrini@pivotal.io

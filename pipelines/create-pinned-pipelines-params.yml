@@ -1,11 +1,12 @@
 pivnet_token: 
 s3_access_key_id: minio
 s3_secret_access_key: alwaysbekind
-s3_endpoint: http://localhost:9000
-s3_bucket: s3-seed
+s3_endpoint: http://minio:9000
+s3_bucket: s3-starter
 s3_region: us-east-1
-atc_external_url: http://localhost:8080
+atc_external_url: http://concourse-web:8080
 
+pcf_pipelines_regex: ^v0\.15\.5-rc\.31$
 operations_manager_regex: ^1\.11\..*$
 elastic_runtime_regex: ^1\.11\..*$
 gpg_public_key_contents: |

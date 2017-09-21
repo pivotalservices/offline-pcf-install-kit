@@ -1,0 +1,171 @@
+releases:
+- {name: ipsec, version: 1.6.15}
+- {name: clamav, version: 1.2.7}
+- {name: os-conf, version: 13}
+- {name: fim, version: 1.2.1}
+
+addons:
+- name: fim
+  jobs:
+  - name: fim
+    release: fim
+  properties: {}
+- name: os-configuration
+  jobs:
+  - name: login_banner
+    release: os-conf
+  properties:
+    login_banner:
+      text: |
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        YOU ARE ACCESSING A MONITORED INFORMATION SYSTEM (IS) THAT IS PROVIDED FOR AUTHORIZED USE ONLY.
+        By using this IS (which includes any device attached to this IS), you consent to the following conditions:
+
+        - The owner routinely intercepts and monitors communications on this IS for purposes including,
+          but not limited to, penetration testing, communications security monitoring, network operations and defense,
+          personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations.
+
+        - At any time, the owner may inspect and seize data stored on this IS.
+
+        - Communications using, or data stored on, this IS are not private, are subject to routine monitoring,
+          interception, and search, and may be disclosed or used for any owner authorized purpose.
+
+        - This IS includes security measures (e.g., authentication and access controls) to protect owner interests--not
+          for your personal benefit or privacy.
+
+        - Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or
+          monitoring of the content of privileged communications, or work product, related to personal representation or
+          services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are
+          private and confidential. See User Agreement for details.
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+- name: clamav
+  jobs:
+  - name: clamav
+    release: clamav
+  properties:
+    clamav:
+      on_access: no
+      scheduled: yes # Runs every hour, cannot change sched, but can turn it off
+      action: notify # Possible actions are [notify, remove, move, copy]
+      # action_destination: /var/vcap/data/clamav/found
+      database_mirror: ((config.clamav.dbMirror1))
+  include:
+    stemcell:
+    - os: ubuntu-trusty
+
+- name: ipsec-addon
+  jobs:
+  - name: ipsec
+    release: ipsec
+  properties:
+    ipsec:
+      optional: true
+      ipsec_subnets:
+      - 10.10.100.0/24  # VMWare Network
+      - 192.168.10.0/26 # Infra
+      - 192.168.20.0/22 # Deployment
+      - 192.168.24.0/22 # Services
+      - 192.168.28.0/22 # Dynamic-Services
+      no_ipsec_subnets:
+      - 10.10.100.100/32 # bosh director
+      - 10.10.100.201/32 # vCenter
+      - 10.10.100.204/32 # NSX Manager
+      - 10.10.100.225/32 # NSX Edge Gateway
+      - 10.10.100.226/32 # NSX Edge Gateway
+      - 10.10.100.227/32 # NSX Edge Gateway
+      - 10.10.100.228/32 # NSX Edge Gateway
+      - 10.10.100.229/32 # NSX Edge Gateway
+      - 10.10.100.205/32 # NSX Controller
+      - 10.10.100.206/32 # NSX Controller
+      - 10.10.100.207/32 # NSX Controller
+      - 10.10.100.208/32 # NSX Controller
+      - 192.168.10.1/32  # NSX Edge Gateway
+      - 192.168.20.1/32  # NSX Edge Gateway
+      - 192.168.24.1/32  # NSX Edge Gateway
+      - 192.168.28.1/32  # NSX Edge Gateway
+      - 192.168.23.250/32 # NSX Edge Gateway
+      - 192.168.27.250/32 # NSX Edge Gateway
+      - 192.168.27.251/32 # NSX Edge Gateway
+      - 10.10.101.0/24   # vMotion
+      - 10.10.102.0/24   # vSan
+      instance_certificate: |
+        -----BEGIN CERTIFICATE-----
+        MIIDajCCAdKgAwIBAgIBATANBgkqhkiG9w0BAQsFADAdMRswGQYDVQQDDBJQQ0Yg
+        SVBzZWMgQWRkT24gQ0EwHhcNMTcwODI0MjMzNTM5WhcNMTgwODI0MjMzNTM5WjAZ
+        MRcwFQYDVQQDDA5QQ0YgSVBzZWMgcGVlcjCCASIwDQYJKoZIhvcNAQEBBQADggEP
+        ADCCAQoCggEBAJt42N1RkMZ065qj4Z5izvqKQflRYo0DdLVYiR1+rJ9HRng+8zCZ
+        9RmiFAMVVIBEihCIN4rJBNQMrLnlNJ3BolW+L+7sCHR2Lwz0w8JWebh9YHAVvMO0
+        /lBpCAf2qk8SeWRfpx725+r2nhupi8d6vm2jNwaf4RDcb3jtzCCE9k/P7OMyQRt7
+        IZz7UoN01mcKKlc01g3cwlofKyYCZNZU4YY7vQcYkSx9YMa+1ilpWGF+vjgBEIXk
+        1y2Qe6G7owaqKNzVbu6a4xnIDXwKR/so2RdjdvpUhnf8CshD2wC8OeaXkuQ62Z8q
+        hw9PBRfLwFFJPvF4HrEZQf30r31zWIn/tMcCAwEAAaM5MDcwCQYDVR0TBAIwADAL
+        BgNVHQ8EBAMCA/gwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMA0GCSqG
+        SIb3DQEBCwUAA4IBgQA94LGWBjmWLMYvue+csnMWSIcBxxMLqIjkdqH3tprjRVhC
+        pJ4bcQLo2EO/DYPUXmkckOkWWI6zTdG9qHnvFm3Q5Ym9IBjWLDP82iDn+oB73Q4P
+        2BX94BT2ei+Nnv/aV5auUXSWrT8A65/dL69g0Mv7Q6lU7UqSKXDOkfB4hQEQCfur
+        0BoY6TWyXc1gGeqKvV+CrxTyqPLng7gfyGy7DLQyTAgUrYXw8Cg0Qr5IElSu0b+p
+        muTLEXUfcMuW9a5/z+bOaaVSThD+wiXK0wg9uEwznMvtdvF+aYINwSdj3+pyGAEI
+        g1s655XOluwp/9Jq0ksiiFMKInjo7r4LbErzbzrb4s5SZv9eC+Lho9ecAjkIpTnq
+        lsrWGauXf20ooVPbR0GKeKToNV0D3ozlqRDJCPyOUXBHjxIlhw2NM6pGETpTGswu
+        o2bsBpIM/Dp7hwLQyzHYcw+FPicnk5nCoRQLaTc5Av9lcFuZqA7jfAFEVSCflBn0
+        35QISnvtps4yzxx4w3U=
+        -----END CERTIFICATE-----
+      instance_private_key: |
+        -----BEGIN PRIVATE KEY-----
+        MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCbeNjdUZDGdOua
+        o+GeYs76ikH5UWKNA3S1WIkdfqyfR0Z4PvMwmfUZohQDFVSARIoQiDeKyQTUDKy5
+        5TSdwaJVvi/u7Ah0di8M9MPCVnm4fWBwFbzDtP5QaQgH9qpPEnlkX6ce9ufq9p4b
+        qYvHer5tozcGn+EQ3G947cwghPZPz+zjMkEbeyGc+1KDdNZnCipXNNYN3MJaHysm
+        AmTWVOGGO70HGJEsfWDGvtYpaVhhfr44ARCF5NctkHuhu6MGqijc1W7umuMZyA18
+        Ckf7KNkXY3b6VIZ3/ArIQ9sAvDnml5LkOtmfKocPTwUXy8BRST7xeB6xGUH99K99
+        c1iJ/7THAgMBAAECggEAa6MuGYQIBK4cE/MUGDD2dZTU+kSzQ0e6PHcwbuAtqRSS
+        oFuMyQA+JeIFkuDooOlS4QE92vMzSZAA4a7jT7kop85Fp1d4vxC3oHOxOFHgca8z
+        3kXea2xaidc9vS20WYxDyQ9ER/bPN+hILISkhpXfU06loQt9qcvDzWhtY7JKSZRp
+        dDWXIUsQcC5A5MJOlT1B2LupzxNDLcPUcErhXjRiR2i3GMlk5kmJOmlZ/xfiKkIR
+        kGPdtBcXiRwKPlQ9G9uTTLOB3M4If6IHu4J0ojeW6ItK5zvQTDm7tsyGZ26+7bdX
+        Q1StgoaqIdCno4bS7IFzH4VkisZI0ahFeEvPQ44EqQKBgQDLaLr6IMRGvemL1Ks/
+        YKqCwIQmmjD33yaXOqJIwUUhG9kI6Fzkm7BdLxwSwcgCPruF0ACMic82fVY6DRqE
+        D/cDk7rHaQGtl2ucLJ6fRFgjn7ulvzuE3ak5uUSgwHfW6QDyvoNoFSxP6p/nwgtV
+        dbBqYnYIlNLbSIm6ae0Gf05LVQKBgQDDq0DLhlVIGIfR9hdqWmcVt57QTrEzRufM
+        B5cCa+JHbsZxMi3BANErW7l3A3u1K7/JCKi06dbJsET6190jrhCctfbc/B+EnRic
+        aEjIxkX/H+KznMUiFCMBcUJCrMrhrRocFYNCqzUMJzxIl5NeQF5rZTEEZh1LhQTo
+        VUmlx7PXqwKBgQCWPs2dZAaWmkCf4H59WdGYssrqGIqDDHlcyxqD0v5U7lTpl3jG
+        A5nJurppwGkT/3JT7Mf7Bu/ft8SxLGyhj4lNQxl7obxzlJ0PxoWD7t+LsLjSPOah
+        xXjyAj8G3iOmwoTIyKAXiUwp24wxi8sDXOLqMcAtpn/5KSNSZluFqRMT4QKBgQC0
+        8NyOWL7sWKLgqi2lD8xb7N1TzDFZNayMpEgk2Rb675lafAiLffHvonazc+kl9Dr5
+        8KPyCHuzLuna/Vtl70U1ZZ/PYubSf2OO33DPGWsJLbc6WTKC/RQR9WZMufUzFBwc
+        9FfZgvEfN/krN9/zPJsTvRPC+ZsFhxCuuI/OWgoY2QKBgFQxpV4+g3L3l0mdEYkJ
+        pHF1+ActEOdixJxobINi4QdQX60iDP2cRXlR/QPDKX35KW/0xb9pnJ1n9UsPPZuz
+        eW1xXWLD5lKV7VeJ9qtS3UDdcJ72ywZZ4cVFsQO9ihMDZriw1teD7Fi3kp+IkSlz
+        hEBnAneUJY7yAnK/1QNA0gAU
+        -----END PRIVATE KEY-----
+      ca_certificates:
+        - |
+          -----BEGIN CERTIFICATE-----
+          MIIEUDCCArigAwIBAgIJAIBzLW521lgvMA0GCSqGSIb3DQEBCwUAMB0xGzAZBgNV
+          BAMMElBDRiBJUHNlYyBBZGRPbiBDQTAeFw0xNzA4MjQyMzM1MzlaFw0yMDA4MjMy
+          MzM1MzlaMB0xGzAZBgNVBAMMElBDRiBJUHNlYyBBZGRPbiBDQTCCAaIwDQYJKoZI
+          hvcNAQEBBQADggGPADCCAYoCggGBAKTC87z2dSXdodk4shAFwNc/9K4C9hwzDSY1
+          dM4n/w40EDTlk00frm7A09J5WKJiom8WWxS+qnb+oNemzBsPFUzcSNdIn6KZga5v
+          CCQFp/TdUn8rFPn8bRqhiIIY1a+t8L6l9HN5RqMoKsyCNOpWePThjk3Sd1Daw6lY
+          jx8ron4fjcec9UabWvRARupxuwJPR3oIa4N2/3MCIQcyEpMPhtrv2xz/hA829WQE
+          wVtCT2CnDGeRbgw/SdOWt7lOwoylxIiaBRGLmJ+Fy0hpS6YrAYEwHw12mwf23NR7
+          AU3IxOjpu47FQQZ/pBTXuvbQPUNxohWhYXXw7zYXq0UB3WXQYPP+WcEzPmBIqqSS
+          j5WByKio4toGSWfjY6WxYK7lASwVQBXA8xVvNz+uNXft3Z7iJfhY0Fstky0ryWxQ
+          c9tDnVm46iOYFCK6n7zlkglqo4NSeMAGuAWCywPUu5D8CRhg3DvR+iIOjtHYabbT
+          LNUqeQsuM7bn4KmmI3SmUZoymT7gywIDAQABo4GSMIGPMB0GA1UdDgQWBBQZpyqo
+          vMCA7yDqVnghAXfGgmkz5zBNBgNVHSMERjBEgBQZpyqovMCA7yDqVnghAXfGgmkz
+          56EhpB8wHTEbMBkGA1UEAwwSUENGIElQc2VjIEFkZE9uIENBggkAgHMtbnbWWC8w
+          EgYDVR0TAQH/BAgwBgEB/wIBADALBgNVHQ8EBAMCAQYwDQYJKoZIhvcNAQELBQAD
+          ggGBAGqquVQYnljj72dDeLGoNIKL7bFeRviiLR5AEgTkyFYKBkQ9gUZ0b3SDT9i5
+          SPH3d8dXCqa92o9qNk/t7C8r6zyXC9hQHgF/EmSUdpIBxaWzzhN9JWqYd5I2I/9i
+          Tv+kuX8n7IMZGwrNm/2UDddH0ITD+nC/6ZprnCO+kVMOgNEpL5fPcwFRMP/BvNpt
+          edcX5FBXm8L5JI7Zt6ahVdeaeLkFJYx6jwBprtnw7lGsz6N2PrINHgc2vXHoxxDh
+          JgGyAPGGcKjUjdPKrL+Th9Gk9jQPYlQZ5TgPCzHCHVEBRVcZhMs2ZqIQAxQx19Lf
+          XmTO0ktUVrdByZNs8513nitB5HDDLBmhbvSBlO2EJDAUeowH0PdktibzYjX6Y0Rg
+          zy3cKLrHwun4/LgH2Gmdy6TcsXEuOB7QdpTmY37/Xz2/yuuzMlSEhDTqSwo6Pq6m
+          fWvXD3i3OaTaHObrMeKSit/SejQLYJMO6ZkIeZ7fHFSyiDQJb1YZ7JK1Uwn6UxiK
+          K19ocw==
+          -----END CERTIFICATE-----
+
+      prestart_timeout: 30

@@ -1,0 +1,5 @@
+om_vm_network: vxw-dvs-24-virtualwire-9-sid-5000-lsw-nsx-edge-Infra           # vCenter network name to use to deploy Ops Manager in
+infra_vsphere_network: vxw-dvs-24-virtualwire-9-sid-5000-lsw-nsx-edge-Infra       # vCenter Infrastructure network name
+deployment_vsphere_network: vxw-dvs-24-virtualwire-13-sid-5001-lsw-nsx-edge-Ert  # vCenter Deployment network name
+services_vsphere_network: vxw-dvs-24-virtualwire-16-sid-5002-lsw-nsx-edge-PCF-Tiles    # vCenter Services network name
+dynamic_services_vsphere_network: vxw-dvs-24-virtualwire-17-sid-5003-lsw-nsx-edge-Dynamic-Services     # vCenter Dynamic Services network name

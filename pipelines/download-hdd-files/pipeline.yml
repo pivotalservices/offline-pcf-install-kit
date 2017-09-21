@@ -84,6 +84,7 @@ resources:
   source:
     owner: minio
     repository: mc
+    access_token: {{github_token}}
 - name: mc-linux-amd64
   type: curl
   source:
@@ -136,6 +137,7 @@ resources:
   source:
     owner: krishicks
     repository: concourse-pipeline-steamroller
+    access_token: {{github_token}}
 - name: concourse-pipeline-steamroller-out
   type: s3
   source:
@@ -260,6 +262,121 @@ resources:
     region_name: {{s3_region}}
     regexp: p-cloudcache-(.*).pivotal
 
+# Environment Bosh
+
+- name: bosh-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/bosh
+- name: bosh-release-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: bosh-standalone
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: bosh-(.*).tgz
+
+- name: bosh-vsphere-cpi-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry-incubator/bosh-vsphere-cpi-release
+- name: bosh-vsphere-cpi-release-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: bosh-standalone
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: bosh-vsphere-cpi-release-(.*).tgz
+
+- name: p-concourse
+  type: pivnet
+  source:
+    api_token: {{pivnet_token}}
+    product_slug: p-concourse
+    product_version: {{concourse_version_regex}}
+    sort_by: semver
+- name: p-concourse-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: bosh-standalone
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: concourse-(.*).tgz
+- name: garden-runc-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: bosh-standalone
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: garden-runc-(.*).tgz
+
+- name: prometheus-release
+  type: github-release
+  source:
+    user: cloudfoundry-community
+    repository: prometheus-boshrelease
+    access_token: {{github_token}}
+- name: prometheus-release-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: bosh-standalone
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: prometheus-(.*).tgz
+- name: prometheus-custom-release
+  type: github-release
+  source:
+    user: dlapiduz
+    repository: prometheus-custom-boshrelease
+    access_token: {{github_token}}
+- name: prometheus-custom-release-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: bosh-standalone
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: prometheus-custom-(.*).tgz
+
+- name: minio-boshrelease
+  type: bosh-io-release
+  source:
+    repository: minio/minio-boshrelease
+- name: minio-boshrelease-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: bosh-standalone
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: minio-boshrelease-(.*).tgz
+
+- name: bind9-boshrelease
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry-community/bind9-boshrelease
+- name: bind9-boshrelease-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    bucket: bosh-standalone
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    regexp: bind9-boshrelease-(.*).tgz
+
 # Bosh add-ons
 
 - name: clamav
@@ -331,13 +448,14 @@ jobs:
 - name: tile-collector
   plan:
   - aggregate:
-    - get: mc-linux-amd64
-    - get: p-mysql-v1
-    - get: p-mysql-v2
-    - get: p-sso
-    - get: p-cloudcache
-    - get: pcf-metrics
-    - get: p-redis
+    - do:
+      - get: mc-linux-amd64
+      - get: p-mysql-v1
+      - get: p-mysql-v2
+      - get: p-sso
+      - get: p-cloudcache
+      - get: pcf-metrics
+      - get: p-redis
   - task: create-buckets
     config:
       platform: linux
@@ -355,7 +473,7 @@ jobs:
         args:
         - -c
         - |
-          chmod +x mc/mc
+          chmod +x mc-linux-amd64/mc
           mc-linux-amd64/mc config host add minio $S3_ENDPOINT $S3_ACCESS_KEY_ID $S3_SECRET_ACCESS_KEY
           mc-linux-amd64/mc mb minio/products || true
           mc-linux-amd64/mc mb minio/stemcells || true
@@ -416,7 +534,7 @@ jobs:
   - put: p-cloudcache-out
     params:
       file: pivnet-product/*.pivotal
-- name: download-pcf-metrics
+- name: save-pcf-metrics
   plan:
   - get: pivnet-product
     resource: pcf-metrics
@@ -430,7 +548,7 @@ jobs:
   - put: pcf-metrics-out
     params:
       file: pivnet-product/*.pivotal
-- name: download-redis
+- name: save-redis
   plan:
   - get: pivnet-product
     resource: p-redis
@@ -448,11 +566,12 @@ jobs:
 - name: addon-collector
   plan:
   - aggregate:
-    - get: mc-linux-amd64
-    - get: clamav
-    - get: fim
-    - get: ipsec
-    - get: os-conf
+    - do:
+      - get: mc-linux-amd64
+      - get: clamav
+      - get: fim
+      - get: ipsec
+      - get: os-conf
   - task: create-buckets
     config:
       platform: linux
@@ -470,10 +589,10 @@ jobs:
         args:
         - -c
         - |
-          chmod +x mc/mc
+          chmod +x mc-linux-amd64/mc
           mc-linux-amd64/mc config host add minio $S3_ENDPOINT $S3_ACCESS_KEY_ID $S3_SECRET_ACCESS_KEY
           mc-linux-amd64/mc mb minio/products || true
-- name: download-clamav
+- name: save-clamav
   plan:
   - get: clamav
     trigger: true
@@ -481,7 +600,7 @@ jobs:
   - put: clamav-out
     params:
       file: clamav/*.tgz
-- name: download-fim
+- name: save-fim
   plan:
   - get: fim
     trigger: true
@@ -489,7 +608,7 @@ jobs:
   - put: fim-out
     params:
       file: fim/*.tgz
-- name: download-ipsec
+- name: save-ipsec
   plan:
   - get: ipsec
     trigger: true
@@ -497,7 +616,7 @@ jobs:
   - put: ipsec-out
     params:
       file: ipsec/*.tgz
-- name: download-os-conf
+- name: save-os-conf
   plan:
   - get: os-conf
     trigger: true
@@ -527,11 +646,12 @@ jobs:
 - name: tool-collector
   plan:
   - aggregate:
-    - get: mc-linux-amd64
-    - get: mc-source
-    - get: bosh-cli-linux-amd64
-    - get: cf-cli-linux-amd64
-    - get: concourse-pipeline-steamroller
+    - do:
+      - get: mc-linux-amd64
+      - get: mc-source
+      - get: bosh-cli-linux-amd64
+      - get: cf-cli-linux-amd64
+      - get: concourse-pipeline-steamroller
   - task: create-buckets
     config:
       platform: linux
@@ -549,7 +669,7 @@ jobs:
         args:
         - -c
         - |
-          chmod +x mc/mc
+          chmod +x mc-linux-amd64/mc
           mc-linux-amd64/mc config host add minio $S3_ENDPOINT $S3_ACCESS_KEY_ID $S3_SECRET_ACCESS_KEY
           mc-linux-amd64/mc mb minio/tools || true
   - task: prepare-releases
@@ -588,3 +708,166 @@ jobs:
   - put: concourse-pipeline-steamroller-out
     params:
       file: concourse-pipeline-steamroller-out/steamroll-*.tgz
+
+- name: bosh-collector
+  plan:
+  - aggregate:
+    - do:
+      - get: mc-linux-amd64
+      - get: bosh-release
+      - get: bosh-vsphere-cpi-release
+      - get: p-concourse
+      - get: minio-boshrelease
+      - get: prometheus-release
+      - get: prometheus-custom-release
+      - get: bind9-boshrelease
+  - task: create-buckets
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: czero/cflinuxfs2}
+      inputs:
+      - name: mc-linux-amd64
+      params:
+        S3_ENDPOINT: {{s3_endpoint}}
+        S3_ACCESS_KEY_ID: {{s3_access_key_id}}
+        S3_SECRET_ACCESS_KEY: {{s3_secret_access_key}}
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          chmod +x mc-linux-amd64/mc
+          mc-linux-amd64/mc config host add minio $S3_ENDPOINT $S3_ACCESS_KEY_ID $S3_SECRET_ACCESS_KEY
+          mc-linux-amd64/mc mb minio/bosh-standalone || true
+- name: save-bosh-release
+  plan:
+  - get: bosh-release
+    trigger: true
+    passed: [bosh-collector]
+  - task: rename-release
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: czero/cflinuxfs2}
+      inputs:
+      - name: bosh-release
+      outputs:
+      - name: bosh-release-out
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          set -ex
+          VERSION=$(cat bosh-release/version)
+          mv bosh-release/release.tgz bosh-release-out/bosh-$VERSION.tgz
+  - put: bosh-release-out
+    params:
+      file: bosh-release-out/bosh-*.tgz
+- name: save-bosh-vsphere-cpi
+  plan:
+  - get: bosh-vsphere-cpi-release
+    trigger: true
+    passed: [bosh-collector]
+  - task: rename-release
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: czero/cflinuxfs2}
+      inputs:
+      - name: bosh-vsphere-cpi-release
+      outputs:
+      - name: bosh-vsphere-cpi-release-out
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          set -ex
+          VERSION=$(cat bosh-vsphere-cpi-release/version)
+          mv bosh-vsphere-cpi-release/release.tgz bosh-vsphere-cpi-release-out/bosh-vsphere-cpi-release-$VERSION.tgz
+  - put: bosh-vsphere-cpi-release-out
+    params:
+      file: bosh-vsphere-cpi-release-out/bosh-vsphere-cpi-release-*.tgz
+- name: save-concourse
+  plan:
+  - get: p-concourse
+    trigger: true
+    passed: [bosh-collector]
+  - put: p-concourse-out
+    params:
+      file: p-concourse/concourse-*.tgz
+  - put: garden-runc-out
+    params:
+      file: p-concourse/garden-runc-*.tgz
+- name: save-minio
+  plan:
+  - get: minio-boshrelease
+    trigger: true
+    passed: [bosh-collector]
+  - task: rename-release
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: czero/cflinuxfs2}
+      inputs:
+      - name: minio-boshrelease
+      outputs:
+      - name: minio-boshrelease-out
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          set -ex
+          VERSION=$(cat minio-boshrelease/version)
+          mv minio-boshrelease/release.tgz minio-boshrelease-out/minio-boshrelease-$VERSION.tgz
+  - put: minio-boshrelease-out
+    params:
+      file: minio-boshrelease-out/minio-boshrelease-*.tgz
+- name: save-prometheus
+  plan:
+  - aggregate:
+    - get: prometheus-release
+      trigger: true
+      passed: [bosh-collector]
+    - get: prometheus-custom-release
+      trigger: true
+      passed: [bosh-collector]
+  - put: prometheus-release-out
+    params:
+      file: prometheus-release/prometheus-*.tgz
+  - put: prometheus-custom-release-out
+    params:
+      file: prometheus-custom-release/prometheus-custom-*.tgz
+- name: save-bind9
+  plan:
+  - get: bind9-boshrelease
+    trigger: true
+    passed: [bosh-collector]
+  - task: rename-release
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: czero/cflinuxfs2}
+      inputs:
+      - name: bind9-boshrelease
+      outputs:
+      - name: bind9-boshrelease-out
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          set -ex
+          VERSION=$(cat bind9-boshrelease/version)
+          mv bind9-boshrelease/release.tgz bind9-boshrelease-out/bind9-boshrelease-$VERSION.tgz
+  - put: bind9-boshrelease-out
+    params:
+      file: bind9-boshrelease-out/bind9-boshrelease-*.tgz
