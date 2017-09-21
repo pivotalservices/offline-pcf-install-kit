@@ -1,0 +1,47 @@
+---
+resources:
+- name: docker-image
+  type: docker-image
+  source:
+    repository: {{docker_image}}
+- name: docker-image-out
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    bucket: {{s3_bucket}}
+    endpoint: {{s3_endpoint}}
+    region_name: {{s3_region}}
+    secret_access_key: {{s3_secret_access_key}}
+    regexp: {{docker_image_regex}}
+
+jobs:
+- name: save-docker-image
+  plan:
+  - get: docker-image
+  - task: save-docker-image  
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: czero/cflinuxfs2
+      inputs:
+        - name: docker-image
+      outputs:
+        - name: docker-image-out
+      params:
+        DOCKER_IMAGE: {{docker_image}}
+        DOCKER_IMAGE_NAME: {{docker_image_name}}
+        VERSION: {{docker_image_version}}
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          digest=$(cat docker-image/digest)
+
+          echo "Creating tarball with version ${VERSION}-${digest}..."
+          tar cf "docker-image-out/${DOCKER_IMAGE_NAME}-${VERSION}-${digest}.tar" -C docker-image .
+  - put: docker-image-out
+    params:
+      file: docker-image-out/*.tar

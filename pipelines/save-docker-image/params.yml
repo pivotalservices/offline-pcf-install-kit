@@ -1,0 +1,14 @@
+s3_access_key_id: minio
+s3_secret_access_key: alwaysbekind
+s3_endpoint: http://minio:9000
+s3_bucket: s3-starter
+s3_region: us-east-1
+
+docker_image: nsxedgegen/nsx-edge-gen-worker  # The docker image to pull
+docker_image_name: nsx-edge-gen-worker  # The name of the image tarball
+docker_image_version: 0.0.1  # The version you want the tarball to have in S3
+
+# In the format of <FOLDER>/{{docker_image_name}}-(.*)-.*.tar, where <FOLDER>
+# is where you'd like to place the image tarball in S3, and {{docker_image_name}}
+# is the value provided above.
+docker_image_regex: nsxedgegen/nsx-edge-gen-worker-(.*)-.*.tar

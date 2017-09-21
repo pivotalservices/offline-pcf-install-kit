@@ -61,7 +61,6 @@ Next, we'll download the PCF OpsManager and Elastic Runtime, and prepare an offl
 version of `pcf-pipelines` pinned to the downloaded versions of the product.
 
 ```
-# Fly up the pipeline and get it running
 fly -t kit set-pipeline -p create-offline-pinned-pipelines -c kit/repos/pcf-pipelines/create-offline-pinned-pipelines/pipeline.yml -l pipelines/create-pinned-pipelines-params.yml
 fly -t kit unpause-pipeline -p create-offline-pinned-pipelines
 fly -t kit trigger-job -j create-offline-pinned-pipelines/collector
@@ -88,16 +87,30 @@ and fly up the pipeline to download the various products, stemcells, tools, bosh
 releases, and add-ons used in a common secure offline environment.
 
 ```
-# Log in and alias the local Concourse
-fly -t kit login -c http://localhost:8080
-
-# Fly up the pipeline and get it running
 fly -t kit set-pipeline -p download-hdd-files -c pipelines/download-hdd-files/pipeline.yml -l pipelines/download-hdd-files/params.yml
 fly -t kit unpause-pipeline -p download-hdd-files
 fly -t kit trigger-job -j download-hdd-files/tool-collector
 fly -t kit trigger-job -j download-hdd-files/bosh-collector
 fly -t kit trigger-job -j download-hdd-files/addon-collector
 fly -t kit trigger-job -j download-hdd-files/tile-collector
+```
+
+### Save Additional Docker Images
+
+If you're bringing in additional pipelines with tasks that are based on images other
+than `czero/cflinuxfs2`, you'll need to save these in the rootfs tarball format and
+then update the pipelines to pull them from S3 instead of docker on the inside.
+
+For building an NSX environment in vSphere, you'll need to download the `nsxedgegen/nsx-edge-gen-worker`
+image using the default parameters provided.  To download other images, update
+the parameters in `pipelines/save-docker-image/params.yml` and fly up the pipeline
+for each image you need to download.
+
+```
+# Fly up the pipeline and get it running
+fly -t kit set-pipeline -p save-docker-image -c pipelines/save-docker-image/pipeline.yml -l pipelines/save-docker-image/params.yml
+fly -t kit unpause-pipeline -p save-docker-image
+fly -t kit trigger-job -j save-docker-image/save-docker-image
 ```
 
 ### Transport
