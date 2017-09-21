@@ -1,3 +1,0 @@
-resource_map:
-  "concourse-vsphere": nsx-ci-pipeline
-  "nsx-edge-gen": nsx-edge-gen

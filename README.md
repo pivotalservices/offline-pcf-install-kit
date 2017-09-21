@@ -12,16 +12,93 @@ What exactly do you need to install a full PCF foundation with no public interne
 functionality?  This repository is meant to collect the full set of artifacts so
 that you can just drop it on a hard drive confident you have what you'll need.  
 Everything outside of the `kit/` directory is intended to be used to _prepare_ the
-kit you'll take into an airgapped environment.  The `kit/` directory itself collects
+kit you'll take into an offline environment.  The `kit/` directory itself collects
 all of the artifacts, tools, pipelines, and resources you'll need to set up PCF
 without any access to the internet.  The contents of the kit after preparation
 are as follows:
 
-- Version-pinned offline pipeline tarball containing the installation artifacts for
-OpsManager and Elastic Runtime, required stemcells, and the modified pipelines to
-unpack and install everything.  See the `pcf-pipelines` repository for more information
-on this tarball and how to use it.
-- Useful repositories containing bosh manifests and concourse pipelines.
+```
+kit
+├── bosh-standalone
+|   |   (Bosh releases for the PCF support environment)
+|   |
+│   ├── bind9-boshrelease-0.3.0.tgz
+│   ├── bosh-263.2.0.tgz
+│   ├── bosh-vsphere-cpi-release-44.tgz
+│   ├── concourse-3.3.3.tgz
+│   ├── garden-runc-1.6.0.tgz
+│   ├── minio-boshrelease-6.tgz
+│   ├── prometheus-18.6.1.tgz
+│   └── prometheus-custom-1.1.0.tgz
+├── manifests
+|   |   (Bosh manifests and config for the support environment)
+|   |
+│   ├── bind9.yml
+│   ├── cloud-config.yml
+│   ├── concourse.yml
+│   ├── minio-4node.yml
+│   └── runtime-config.yml
+├── pipelines
+|   |   (Pipelines and parameter files used to set up PCF)
+|   |
+│   ├── download-offline-artifacts-params.yml
+│   ├── nsx-params.yml
+│   ├── nsx-pipeline.yml
+│   ├── pcf-params.yml
+│   ├── unpack-pipelines-params.yml
+│   └── vxrail-nsxgen-result-params.yml
+├── products
+|   |   (Products and add-ons downloaded from Pivotal Network)
+|   |
+│   ├── Pivotal_Single_Sign-On_Service_1.4.3.pivotal
+│   ├── apm-1.3.8.pivotal
+│   ├── clamav-1.2.7.tgz
+│   ├── fim-1.2.1.tgz
+│   ├── ipsec-1.6.15.tgz
+│   ├── os-conf-release-v16.tgz
+│   ├── p-cloudcache-1.1.1-build.5.pivotal
+│   ├── p-mysql-1.10.3.pivotal
+│   ├── p-redis-1.9.3.pivotal
+│   ├── pivotal-mysql-2.0.5.pivotal
+├── repos
+|   |   (Usefule third-party repositories as git submodules)
+|   |
+│   ├── bosh-deployment/
+│   ├── nsx-ci-pipeline/
+│   ├── nsx-edge-gen/
+│   ├── pcf-pipelines/
+│   └── prometheus-on-PCF/
+├── s3-starter
+|   |   (These are the buckets required to be on the offline S3 to use the kit)
+|   |
+│   ├── czero-cflinuxfs2
+│   │   └── czero-cflinuxfs2-v0.16.0-sha256:b1c970742e0fa0f68b574c7fc87dd94ca0c2783f3feeb3ee20052f87af94b5a1.tar
+│   ├── nsxedgegen
+│   │   └── nsx-edge-gen-worker-0.0.1-sha256:d93b80e0726a28d349bfb65b4948b61fae92e124645afde0159f3525e3992b89.tar
+│   └── pcf-pipelines-combined
+│       ├── pcf-pipelines-combined-5.0.0.tar.gpg
+│       └── version
+├── scripts
+|   |   (Helpful scripts for common tasks)
+|   |
+│   ├── create-bosh-env.sh
+│   ├── delete-bosh-env.sh
+│   └── openssl-create-ipsec-certs.sh
+├── stemcells
+|   |   (Stemcells required for everything in the products folder)
+|   |
+│   ├── bosh-stemcell-3363.25-vsphere-esxi-ubuntu-trusty-go_agent.tgz
+│   ├── bosh-stemcell-3363.35-vsphere-esxi-ubuntu-trusty-go_agent.tgz
+│   ├── bosh-stemcell-3363.37-vsphere-esxi-ubuntu-trusty-go_agent.tgz
+│   └── bosh-stemcell-3421.9-vsphere-esxi-ubuntu-trusty-go_agent.tgz
+└── tools
+    |   (Command line tools and utilities required for interacting with the offline environment)
+    |   
+    ├── bosh-cli-2.0.40-linux-amd64
+    ├── cf-cli_6.31.0_linux_x86-64.tgz
+    ├── mc-linux-amd64-vRELEASE.2017-06-15T03-38-43Z
+    └── steamroll-0.0.3.tgz
+```
 
 # Kit Creation
 
