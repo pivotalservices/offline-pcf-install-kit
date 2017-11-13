@@ -7,8 +7,8 @@ s3_region: us-east-1
 atc_external_url: http://concourse-web:8080
 
 pcf_pipelines_regex: ^v0\.15\.5-rc\.31$
-operations_manager_regex: ^1\.11\..*$
-elastic_runtime_regex: ^1\.11\..*$
+operations_manager_regex: ^1\.12\..*$
+elastic_runtime_regex: ^1\.12\..*$
 gpg_public_key_contents: |
   -----BEGIN PGP PUBLIC KEY BLOCK-----
 
