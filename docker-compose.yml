@@ -10,7 +10,6 @@ services:
     environment:
       MINIO_ACCESS_KEY: minio
       MINIO_SECRET_KEY: alwaysbekind
-    restart: always
 
   concourse-db:
     image: postgres:9.5
@@ -21,7 +20,6 @@ services:
       POSTGRES_USER: concourse
       POSTGRES_PASSWORD: alwaysbekind
       PGDATA: /database
-    restart: always
 
   concourse-web:
     image: concourse/concourse
@@ -38,7 +36,6 @@ services:
       CONCOURSE_EXTERNAL_URL: "http://pcfbuild:8080"
       CONCOURSE_POSTGRES_DATA_SOURCE: |-
         postgres://concourse:alwaysbekind@concourse-db:5432/concourse?sslmode=disable
-    restart: always
 
   concourse-worker:
     image: concourse/concourse
@@ -48,4 +45,3 @@ services:
     volumes: ["./concourse/keys/worker:/concourse-keys"]
     environment:
       CONCOURSE_TSA_HOST: concourse-web
-    restart: always
