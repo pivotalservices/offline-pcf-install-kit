@@ -10,18 +10,18 @@ iaas_type: vsphere
 
 # Pivotal product tiles
 
-mysql_v1_version_regex: ^1\.10\..*$
-mysql_v2_version_regex: ^2\.0\..*$
-sso_version_regex: ^1\.4\..*$
-pcf_metrics_version_regex: ^1\.3\..*$
-cloud_cache_version_regex: ^1\.1\..*$
-redis_version_regex: ^1\.9\..*$
+mysql_v1_version_regex: ^1\..*\..*$
+mysql_v2_version_regex: ^2\..*\..*$
+sso_version_regex: ^1\..*\..*$
+pcf_metrics_version_regex: ^1\..*\..*$
+cloud_cache_version_regex: ^1\..*\..*$
+redis_version_regex: ^1\..*\..*$
 
 # Bosh add-ons
 
-clamav_version_regex: ^1\.2\..*$
-fim_version_regex: ^1\.2\..*$
-ipsec_version_regex: ^1\.6\..*$
+clamav_version_regex: ^1\..*\..*$
+fim_version_regex: ^1\..*\..*$
+ipsec_version_regex: ^1\..*\..*$
 osconf_version_regex: ^.*$
 
 # Bosh Deployments (standalong)
