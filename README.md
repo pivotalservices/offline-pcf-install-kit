@@ -14,60 +14,19 @@ that you can just drop it on a hard drive confident you have what you'll need.
 Everything outside of the `kit/` directory is intended to be used to _prepare_ the
 kit you'll take into an offline environment.  The `kit/` directory itself collects
 all of the artifacts, tools, pipelines, and resources you'll need to set up PCF
-without any access to the internet.  The contents of the kit after preparation
-are as follows:
+without any access to the internet.
+
+The kit itself is made up of several components:
+
+1. The product bits (VMs, tiles, and stemcells) for installing OpsMan and ERT without access to the internet.
+1. The tools used to run the pipelines inside the airgapped environment.  This includes Bosh, Concourse, and Minio.
+1. The Concourse pipelines and backing task docker images used to install OpsMan and ERT from offline artifacts.
+1. Any additional Pivotal products, bosh releases/add-ons, and open-source tooling to be deployed in the offline environment.
+
+The product bits are provided by Pivotal Network, GitHub, Bosh.io, and other open-source repositories.  The pipelines for packing, unpacking, and installing PCF is provided by the `pcf-pipelines` releases on Pivotal Network or from their repository on GitHub.  Supplemental pipelines for gathering up the rest of the resources are provided by this repository.
 
 ```
 kit
-├── bosh-standalone
-|   |   (Bosh releases for the PCF support environment)
-|   |
-│   ├── bind9-boshrelease-0.3.0.tgz
-│   ├── bosh-263.2.0.tgz
-│   ├── bosh-vsphere-cpi-release-44.tgz
-│   ├── concourse-3.3.3.tgz
-│   ├── garden-runc-1.6.0.tgz
-│   ├── minio-boshrelease-6.tgz
-│   ├── prometheus-18.6.1.tgz
-│   └── prometheus-custom-1.1.0.tgz
-├── manifests
-|   |   (Bosh manifests and config for the support environment)
-|   |
-│   ├── bind9.yml
-│   ├── cloud-config.yml
-│   ├── concourse.yml
-│   ├── minio-4node.yml
-│   └── runtime-config.yml
-├── pipelines
-|   |   (Pipelines and parameter files used to set up PCF)
-|   |
-│   ├── download-offline-artifacts-params.yml
-│   ├── nsx-params.yml
-│   ├── nsx-pipeline.yml
-│   ├── pcf-params.yml
-│   ├── unpack-pipelines-params.yml
-│   └── vxrail-nsxgen-result-params.yml
-├── products
-|   |   (Products and add-ons downloaded from Pivotal Network)
-|   |
-│   ├── Pivotal_Single_Sign-On_Service_1.4.3.pivotal
-│   ├── apm-1.3.8.pivotal
-│   ├── clamav-1.2.7.tgz
-│   ├── fim-1.2.1.tgz
-│   ├── ipsec-1.6.15.tgz
-│   ├── os-conf-release-v16.tgz
-│   ├── p-cloudcache-1.1.1-build.5.pivotal
-│   ├── p-mysql-1.10.3.pivotal
-│   ├── p-redis-1.9.3.pivotal
-│   ├── pivotal-mysql-2.0.5.pivotal
-├── repos
-|   |   (Usefule third-party repositories as git submodules)
-|   |
-│   ├── bosh-deployment/
-│   ├── nsx-ci-pipeline/
-│   ├── nsx-edge-gen/
-│   ├── pcf-pipelines/
-│   └── prometheus-on-PCF/
 ├── s3-starter
 |   |   (These are the buckets required to be on the offline S3 to use the kit)
 |   |
@@ -78,29 +37,29 @@ kit
 │   └── pcf-pipelines-combined
 │       ├── pcf-pipelines-combined-5.0.0.tar.gpg
 │       └── version
-├── scripts
-|   |   (Helpful scripts for common tasks)
-|   |
-│   ├── create-bosh-env.sh
-│   ├── delete-bosh-env.sh
-│   └── openssl-create-ipsec-certs.sh
-├── stemcells
-|   |   (Stemcells required for everything in the products folder)
-|   |
-│   ├── bosh-stemcell-3363.25-vsphere-esxi-ubuntu-trusty-go_agent.tgz
-│   ├── bosh-stemcell-3363.35-vsphere-esxi-ubuntu-trusty-go_agent.tgz
-│   ├── bosh-stemcell-3363.37-vsphere-esxi-ubuntu-trusty-go_agent.tgz
-│   └── bosh-stemcell-3421.9-vsphere-esxi-ubuntu-trusty-go_agent.tgz
-└── tools
-    |   (Command line tools and utilities required for interacting with the offline environment)
-    |   
-    ├── bosh-cli-2.0.40-linux-amd64
-    ├── cf-cli_6.31.0_linux_x86-64.tgz
-    ├── mc-linux-amd64-vRELEASE.2017-06-15T03-38-43Z
-    └── steamroll-0.0.3.tgz
 ```
 
 # Kit Creation
+
+## A Note on GPG Keys
+
+You'll need a GPG key-pair to encrypt artifacts on the outside (using the public
+key) and decrypt on the inside (using the private key).  This enables the organization
+to provide only the public key to the outside preparer, then verify that nothing
+has been tampered with during transport.
+
+In order to generate a new key-pair, you can follow [this GitHub tutorial](https://help.github.com/articles/generating-a-new-gpg-key/) to run
+the following commands:
+
+```
+# Run the interactive gen-key command, noting the real name and email provided.
+gpg --gen-key
+
+# Export the public and private keys, where NAME is the real name provided and
+# EMAIL is the email provided during the call to gen-key
+gpg --export -a "NAME <EMAIL>" > public.key
+gpg --export-secret-key -a "NAME <EMAIL>" > public.key
+```
 
 ## On the Outside (with Internet Access)
 
@@ -172,6 +131,11 @@ fly -t kit trigger-job -j download-hdd-files/addon-collector
 fly -t kit trigger-job -j download-hdd-files/tile-collector
 ```
 
+**Note:  The `online-workflow.sh` script runs all of the above commands in sequence,
+and can be run as a single command to download and package things up to this point.
+You can run the `cleanup.sh` script to destroy the docker images, concourse data,
+and volumes (but nothing in the `kit/` directory) in order to perform a clean run.**
+
 ### Save Additional Docker Images
 
 If you're bringing in additional pipelines with tasks that are based on images other
@@ -200,4 +164,12 @@ PAIR TO THE PUBLIC KEY USED TO ENCRYPT, PROVIDED IN THE `create-pinned-pipelines
 
 ## Using the Kit on the Inside
 
-TODO
+Once you're inside an airgapped environment, we'll need to set up some basic tools
+to prepare the environment and install PCF.  At a high level this setup includes
+the following:
+
+1. Deploy a bosh director, Concourse for running automation pipelines, and Minio
+for hosting offline artifacts.
+1. Uploading the offline artifacts into Minio in the required buckets.
+1. Run the `unpack-pcf-pipelines-combined` pipeline to unpack the remaining artifacts.
+1. Install PCF using the offline pipeline.
