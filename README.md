@@ -58,7 +58,7 @@ gpg --gen-key
 # Export the public and private keys, where NAME is the real name provided and
 # EMAIL is the email provided during the call to gen-key
 gpg --export -a "NAME <EMAIL>" > public.key
-gpg --export-secret-key -a "NAME <EMAIL>" > public.key
+gpg --export-secret-key -a "NAME <EMAIL>" > private.key
 ```
 
 ## On the Outside (with Internet Access)
@@ -67,6 +67,22 @@ The `docker-compose.yml` at the root of this repository spins up Concourse and M
 locally to use during kit preparation.  You'll run a set of pipelines to prepare
 the kit, and the Minio instance saves its data locally to the `kit/`.  Start up
 the local docker containers:
+
+Before you start, you'll need to generate new keys for the Concourse containers to use for communication.  You'll use the following commands from the [Concourse Docker installation documentation](http://concourse-ci.org/docker-repository.html):
+
+```
+mkdir -p concourse/keys/web concourse/keys/worker
+
+ssh-keygen -t rsa -f ./concourse/keys/web/tsa_host_key -N ''
+ssh-keygen -t rsa -f ./concourse/keys/web/session_signing_key -N ''
+
+ssh-keygen -t rsa -f ./concourse/keys/worker/worker_key -N ''
+
+cp ./concourse/keys/worker/worker_key.pub ./concourse/keys/web/authorized_worker_keys
+cp ./concourse/keys/web/tsa_host_key.pub ./concourse/keys/worker
+```
+
+After you've got your keys generated, you can start everything up:
 
 ```
 docker-compose up
