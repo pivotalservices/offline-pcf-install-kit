@@ -82,7 +82,43 @@ cp ./concourse/keys/worker/worker_key.pub ./concourse/keys/web/authorized_worker
 cp ./concourse/keys/web/tsa_host_key.pub ./concourse/keys/worker
 ```
 
-After you've got your keys generated, you can start everything up:
+Additionally, depending on what version of Docker and your OS, you may need to resize the underlying VM that hosts your docker containers to allow for the concourse works and databases to handle the large files being packaged (see [this](https://gist.github.com/stefanfoulis/5bd226b25fa0d4baedc4803fc002829e#resize-existing-docker-for-mac-disk-image) for more info on the issue for Macs).  On Docker for Mac, the underlying VM disk image can be found in `~/Library/Containers/com.docker.docker/Data/com.docker.driver.amd64-linux/Docker.qcow2`.  You can check the virtual size of this `qcow2` file with the following command:
+
+```
+> qemu-img info Docker.qcow2
+
+  image: ~/Library/Containers/com.docker.docker/Data/com.docker.driver.amd64-linux/Docker.qcow2
+  file format: qcow2
+  virtual size: 60G (xxx bytes)
+  disk size: 1.4G
+  cluster_size: 65536
+  Format specific information:
+      compat: 1.1
+      lazy refcounts: true
+      refcount bits: 16
+      corrupt: false
+```
+
+You'll want to shut down the Docker app and resize the `qcow2` file to around 150GB from the default 60GB that comes out of the box.  After resizing, check the size again and make sure it now reports a larger virtual size:
+
+```
+> qemu-img resize Docker.qcow2 +100G
+
+> qemu-img info Docker.qcow2
+
+  image: ~/Library/Containers/com.docker.docker/Data/com.docker.driver.amd64-linux/Docker.qcow2
+  file format: qcow2
+  virtual size: 160G (171374018560 bytes)
+  disk size: 1.4G
+  cluster_size: 65536
+  Format specific information:
+      compat: 1.1
+      lazy refcounts: true
+      refcount bits: 16
+      corrupt: false
+```
+
+You can restart the Docker app and get the containers running:
 
 ```
 docker-compose up
